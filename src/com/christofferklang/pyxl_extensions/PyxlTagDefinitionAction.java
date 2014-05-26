@@ -24,10 +24,7 @@ public class PyxlTagDefinitionAction extends AnAction {
             return; // no identifier under cursor
         }
 
-        System.out.println("Identifier: " + currentIdentifier);
         final String pyxlClassName = "x_" + currentIdentifier;
-        System.out.println("Pyxl class name: " + pyxlClassName);
-
         Project project = actionEvent.getProject();
         Collection<PyClass> navigationTargets = PyClassNameIndex.find(pyxlClassName, project, false);
 
@@ -70,10 +67,8 @@ public class PyxlTagDefinitionAction extends AnAction {
         boolean previousWasWhiteSpace = false;
         while(start > 0) {
             currentChar = text.charAt(start);
-            System.out.println("< checking: " + currentChar);
             if(currentChar == '>') {
                 foundStart = false;
-                System.out.println("found closing tag when looking for start tag");
                 break;
             }
             previousWasWhiteSpace = Character.isWhitespace(currentChar);
@@ -86,10 +81,8 @@ public class PyxlTagDefinitionAction extends AnAction {
         start += 1; // back off one char to drop the '<'
 
         if(!foundStart) {
-            System.out.println("didn't find start, bailing out");
             return null;
         } else if(previousWasWhiteSpace) {
-            System.out.println("white space before start tag, bailing out");
             return null;
         }
 
@@ -98,7 +91,6 @@ public class PyxlTagDefinitionAction extends AnAction {
         boolean foundEnd = false;
         while(end <= editTextLength) {
             currentChar = text.charAt(end);
-            System.out.println("> checking: " + currentChar);
             final boolean isClosingTagOpening = currentChar == '/' && text.charAt(end - 1) == '<';
             boolean validEndTagCharacter = Character.isJavaIdentifierPart(currentChar) || isClosingTagOpening;
             foundEnd = !validEndTagCharacter;
@@ -109,7 +101,6 @@ public class PyxlTagDefinitionAction extends AnAction {
         }
 
         if(!foundEnd) {
-            System.out.println("Did not find end, bailing out");
             return null;
         }
 
