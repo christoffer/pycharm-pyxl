@@ -1,47 +1,46 @@
 <idea-plugin version="2">
-  <id>com.christofferklang.pyxl_extensions</id>
-  <name>Pyxl Extensions</name>
-  <version>0.1</version>
-  <vendor email="christoffer.klang@gmail.com">Christoffer Klang</vendor>
+    <id>com.christofferklang.pyxl_extensions</id>
+    <name>Pyxl Extensions</name>
+    <version>0.1</version>
+    <vendor email="christoffer.klang@gmail.com">Christoffer Klang</vendor>
 
-  <description><![CDATA[
+    <description><![CDATA[
       Provides extensions to PyCharm for working with <a href="https://github.com/dropbox/pyxl">Pyxl</a> files.
     ]]></description>
 
-  <change-notes><![CDATA[
+    <change-notes><![CDATA[
       Initial version with Goto Pyxl definition.
     ]]>
-  </change-notes>
+    </change-notes>
 
-  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
-  <idea-version since-build="131"/>
+    <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
+    <idea-version since-build="131"/>
 
-  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
-       on how to target different products -->
-  <!-- uncomment to enable plugin in all products
-  <depends>com.intellij.modules.lang</depends>
-  -->
+    <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
 
-  <extensions defaultExtensionNs="com.intellij">
-    <!-- Add your extensions here -->
-  </extensions>
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+    </extensions>
 
-  <application-components>
-    <!-- Add your application components here -->
-  </application-components>
+    <application-components>
+        <!-- Add your application components here -->
+    </application-components>
 
-  <project-components>
-    <!-- Add your project components here -->
-  </project-components>
+    <project-components>
+        <!-- Add your project components here -->
+    </project-components>
 
-  <depends>com.intellij.modules.python</depends>
+    <depends>com.intellij.modules.python</depends>
 
-  <actions>
-    <!-- Add your actions here -->
-      <action id="PyxlTagDefinition" class="com.christofferklang.pyxl_extensions.PyxlTagDefinitionAction"
-              text="Goto Pyxl definition" description="Jumps to the Pyxl definition of the tag under the cursor">
-        <add-to-group group-id="ToolsMenu" anchor="last" />
-          <keyboard-shortcut first-keystroke="ctrl shift b" keymap="$default" />
-      </action>
-  </actions>
+    <actions>
+        <action id="PyxlTagDefinition" class="com.christofferklang.pyxl_extensions.PyxlTagDefinitionAction"
+                text="Goto Pyxl definition" description="Jumps to the Pyxl definition of the tag under the cursor">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <keyboard-shortcut first-keystroke="ctrl shift b" keymap="$default"/>
+        </action>
+    </actions>
 </idea-plugin>
