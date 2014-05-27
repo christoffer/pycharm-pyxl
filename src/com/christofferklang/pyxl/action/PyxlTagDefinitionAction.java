@@ -1,4 +1,4 @@
-package com.christofferklang.pyxl_extensions;
+package com.christofferklang.pyxl.action;
 
 import com.intellij.codeInsight.hint.HintManager;
 import com.intellij.navigation.NavigationItem;

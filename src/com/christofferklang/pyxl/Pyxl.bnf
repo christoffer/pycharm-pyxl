@@ -1,0 +1,32 @@
+{
+    parserClass="com.christofferklang.pyxl.PyxlParser"
+    extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+    psiClassPrefix="Pyxl"
+    psiImplClassSuffix="Impl"
+    psiPackage="com.christofferklang.pyxl.psi"
+    psiImplPackage="com.christofferklang.pyxl.psi.impl"
+    psiImplUtilClass="com.christofferklang.pyxl.psi.impl.PyxlPsiImplUtil"
+
+    elementTypeHolderClass="com.christofferklang.pyxl.psi.PyxlTypes"
+    elementTypeClass="com.christofferklang.pyxl.PyxlElementType"
+    tokenTypeClass="com.christofferklang.pyxl.PyxlTokenType"
+    tokens = [
+        PYTHON_TEXT = 'PYTHON_TEXT'
+        UNEXPECTED_CLOSING_TAG = 'UNEXPECTED_CLOSING_TAG'
+    ]
+}
+
+pyxlFile ::= (PYTHON_TEXT* Tag PYTHON_TEXT*)+ | PYTHON_TEXT*
+
+Tag ::= COMMENT | (TagHead SELF_CLOSE_END) | (TagHead RIGHT_ANGLE Content TagTail)
+
+private TagTail ::= START_OF_CLOSE_TAG TagName RIGHT_ANGLE
+
+TagName ::= IDENTIFIER {mixin="com.christofferklang.pyxl.psi.impl.PyxlNamedElementImpl" implements="com.christofferklang.pyxl.psi.PyxlNamedElement" methods=[getTag getNameIdentifier]}
+
+private TagHead ::= LEFT_ANGLE TagName (Attribute)*
+
+Content ::= (WHITE_SPACE | Tag | TEXT)*
+
+private Attribute ::= ATTR_NAME EQ QUOTED_VALUE
