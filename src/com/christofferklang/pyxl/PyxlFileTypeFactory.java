@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 public class PyxlFileTypeFactory extends FileTypeFactory {
     @Override
     public void createFileTypes(@NonNls @NotNull FileTypeConsumer consumer) {
-//        consumer.consume(PyxlFileType.INSTANCE, "py;pyw;");
         consumer.consume(PyxlFileType.INSTANCE, "pyxl");
     }
 }

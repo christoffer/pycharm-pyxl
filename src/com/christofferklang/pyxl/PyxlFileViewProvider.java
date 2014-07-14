@@ -6,12 +6,14 @@ import com.intellij.lang.Language;
 import com.intellij.lang.LanguageParserDefinitions;
 import com.intellij.lang.ParserDefinition;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.LanguageSubstitutors;
 import com.intellij.psi.MultiplePsiFilesPerDocumentFileViewProvider;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.impl.source.DummyHolderElement;
 import com.intellij.psi.impl.source.PsiFileImpl;
 import com.intellij.psi.templateLanguages.TemplateDataElementType;
+import com.intellij.psi.templateLanguages.TemplateDataLanguageMappings;
 import com.intellij.psi.templateLanguages.TemplateLanguageFileViewProvider;
 import com.intellij.psi.tree.IElementType;
 import com.jetbrains.python.PyElementTypes;
@@ -39,8 +41,27 @@ public class PyxlFileViewProvider
                     PyxlTypes.PYTHON_TEXT,
                     OUTER_ELEMENT_TYPE);
 
+    private final Language mTemplateLanguage;
+
     public PyxlFileViewProvider(PsiManager manager, VirtualFile virtualFile, boolean physical) {
         super(manager, virtualFile, physical);
+        mTemplateLanguage = getTemplateDataLanguage(manager, virtualFile);
+    }
+
+    private Language getTemplateDataLanguage(PsiManager manager, VirtualFile virtualFile) {
+        Language dataLang = TemplateDataLanguageMappings.getInstance(manager.getProject()).getMapping(virtualFile);
+        if (dataLang == null) {
+            dataLang = PythonLanguage.getInstance();
+        }
+
+        Language substituteLang = LanguageSubstitutors.INSTANCE.substituteLanguage(dataLang, virtualFile, manager.getProject());
+
+        // only use a substituted language if it's templateable
+        if (TemplateDataLanguageMappings.getTemplateableLanguages().contains(substituteLang)) {
+            dataLang = substituteLang;
+        }
+
+        return dataLang;
     }
 
     @NotNull

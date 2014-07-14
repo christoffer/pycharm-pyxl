@@ -30,7 +30,7 @@ public class PyxlHighlighter extends SyntaxHighlighterBase {
     @NotNull
     @Override
     public Lexer getHighlightingLexer() {
-        return new PyxlLexerAdapter();
+        return new PythonPyxlLexerAdapter();
     }
 
     @NotNull

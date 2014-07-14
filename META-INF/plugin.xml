@@ -23,9 +23,10 @@
     -->
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileTypeFactory implementation="com.christofferklang.pyxl.PyxlFileTypeFactory" />
-        <lang.parserDefinition language="Pyxl" implementationClass="com.christofferklang.pyxl.PyxlParserDefinition" />
-        <lang.fileViewProviderFactory language="Pyxl" implementationClass="com.christofferklang.pyxl.PyxlFileViewProviderFactory" />
+        <!--<fileTypeFactory implementation="com.christofferklang.pyxl.PyxlFileTypeFactory" />-->
+        <lang.parserDefinition language="Python" order="first" implementationClass="com.christofferklang.pyxl.PyxlParserDefinition" />
+        <!--<lang.fileViewProviderFactory language="Pyxl" implementationClass="com.christofferklang.pyxl.PyxlFileViewProviderFactory" />-->
+        <!--<lang.substitutor language="Python" implementationClass="com.christofferklang.pyxl.PyxlLanguageSubstitutor"/>-->
     </extensions>
 
     <application-components>
