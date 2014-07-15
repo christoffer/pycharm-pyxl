@@ -3,6 +3,7 @@ package com.christofferklang.pyxl;
 import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.tree.IElementType;
 import com.jetbrains.python.PyTokenTypes;
+import com.christofferklang.pyxl.PyPyxlTokenTypes;
 import com.intellij.openapi.util.text.StringUtil;
 
 %%
@@ -154,7 +155,7 @@ return PyTokenTypes.DOCSTRING; }
 "while"               { return PyTokenTypes.WHILE_KEYWORD; }
 "yield"               { return PyTokenTypes.YIELD_KEYWORD; }
 
-"banan" { return PyTokenTypes.YIELD_KEYWORD; }
+"[banan]"               { return PyPyxlTokenTypes.BANANA_DUMMY; }
 
 {IDENTIFIER}          { return PyTokenTypes.IDENTIFIER; }
 
