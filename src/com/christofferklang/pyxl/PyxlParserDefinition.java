@@ -19,7 +19,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
     private class PyxlIndentingLexer extends PythonIndentingProcessor {
         public PyxlIndentingLexer() {
-            super(new PythonPyxlLexer((Reader) null), TokenSet.EMPTY);
+            super(new PyxlLexer((Reader) null), TokenSet.EMPTY);
         }
     }
 }
