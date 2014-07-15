@@ -2,41 +2,19 @@ package com.christofferklang.pyxl;
 
 import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.tree.IElementType;
-import com.christofferklang.pyxl.psi.PyxlTypes;
-import com.intellij.psi.TokenType;
-
-import com.intellij.lexer.FlexLexer;
-import com.intellij.psi.tree.IElementType;
 import com.jetbrains.python.PyTokenTypes;
 import com.intellij.openapi.util.text.StringUtil;
-import java.util.Stack;
 
 %%
 
 %class PyxlLexer
 %implements FlexLexer
-%line
 %unicode
 %function advance
 %type IElementType
 
-%{
-// Keep track of tag nesting level
-private int tagLevel = 0;
-private String tagName = null;
-
-private int yyline = 0;
-Stack<String> tagStack = new Stack<String>();
-
-%}
-
-Identifier = [a-zA-Z_][a-zA-Z_0-9]*
-AttributeName = [a-zA-Z_][a-zA-Z\-0-9]*
-TagHead = "<" {Identifier}
-QuotedValue = \"[^\"\r\n]*\"
-
-LineBreak = \r|\n|\r\n
-WhiteSpace = {LineBreak} | [ \t\f]
+%eof{  return;
+%eof}
 
 DIGIT = [0-9]
 NONZERODIGIT = [1-9]
@@ -86,9 +64,6 @@ ONE_TWO_QUO = (\"[^\"]) | (\"\\[^]) | (\"\"[^\"]) | (\"\"\\[^])
 QUO_STRING_CHAR = [^\\\"] | {ANY_ESCAPE_SEQUENCE} | {ONE_TWO_QUO}
 TRIPLE_QUOTED_LITERAL = {THREE_QUO} {QUO_STRING_CHAR}* {THREE_QUO}?
 
-PYXL_COMMENT_CHAR = [^-] | "-" [^-] | "--" [^>]
-PYXL_COMMENTED_CONTENT = "<!--" {PYXL_COMMENT_CHAR}* "-->"
-
 THREE_APOS = (\'\'\')
 ONE_TWO_APOS = ('[^']) | ('\\[^]) | (''[^']) | (''\\[^])
 APOS_STRING_CHAR = [^\\'] | {ANY_ESCAPE_SEQUENCE} | {ONE_TWO_APOS}
@@ -96,192 +71,156 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
 %state PENDING_DOCSTRING
 %state IN_DOCSTRING_OWNER
-
-%state PARSE_TAG_HEAD, PARSE_TAG_CONTENT, PARSE_TAG_TAIL, IN_PYTHON
-
 %{
 private int getSpaceLength(CharSequence string) {
-    String string1 = string.toString();
-    string1 = StringUtil.trimEnd(string1, "\\");
-    string1 = StringUtil.trimEnd(string1, ";");
-    final String s = StringUtil.trimTrailing(string1);
-    return yylength()-s.length();
-}
+String string1 = string.toString();
+string1 = StringUtil.trimEnd(string1, "\\");
+string1 = StringUtil.trimEnd(string1, ";");
+final String s = StringUtil.trimTrailing(string1);
+return yylength()-s.length();
 
-private void openTag(String tagName) {
-    yybegin(PARSE_TAG_CONTENT);
-    tagStack.push(tagName);
 }
-
 %}
 
 %%
 
+[\ ]                        { return PyTokenTypes.SPACE; }
+[\t]                        { return PyTokenTypes.TAB; }
+[\f]                        { return PyTokenTypes.FORMFEED; }
+"\\"                        { return PyTokenTypes.BACKSLASH; }
+
 <YYINITIAL> {
-    {END_OF_LINE_COMMENT}       { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyxlTypes.COMMENT; }
+[\n]                        { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyTokenTypes.LINE_BREAK; }
+{END_OF_LINE_COMMENT}       { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyTokenTypes.END_OF_LINE_COMMENT; }
 
-    {SINGLE_QUOTED_STRING}          {
-        if (zzInput == YYEOF && zzStartRead == 0)
-            return PyxlTypes.PYTHON_TEXT;
-        else return PyxlTypes.PYTHON_TEXT;
-    }
+{SINGLE_QUOTED_STRING}          { if (zzInput == YYEOF && zzStartRead == 0) return PyTokenTypes.DOCSTRING;
+                                 else return PyTokenTypes.SINGLE_QUOTED_STRING; }
+{TRIPLE_QUOTED_STRING}          { if (zzInput == YYEOF && zzStartRead == 0) return PyTokenTypes.DOCSTRING;
+                                 else return PyTokenTypes.TRIPLE_QUOTED_STRING; }
 
-    {TRIPLE_QUOTED_STRING} {
-        if (zzInput == YYEOF && zzStartRead == 0)
-            return PyxlTypes.PYTHON_TEXT;
-        else return PyxlTypes.PYTHON_TEXT;
-    }
+{SINGLE_QUOTED_STRING}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); if (zzCurrentPos != 0) return PyTokenTypes.SINGLE_QUOTED_STRING;
+return PyTokenTypes.DOCSTRING; }
 
-    {SINGLE_QUOTED_STRING}[\ \t]*[\n;] {
-        yypushback(getSpaceLength(yytext()));
-        if (zzCurrentPos != 0) return PyxlTypes.PYTHON_TEXT;
-        return PyxlTypes.PYTHON_TEXT;
-    }
+{TRIPLE_QUOTED_STRING}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); if (zzCurrentPos != 0) return PyTokenTypes.TRIPLE_QUOTED_STRING;
+return PyTokenTypes.DOCSTRING; }
 
-    {TRIPLE_QUOTED_STRING}[\ \t]*[\n;] {
-        yypushback(getSpaceLength(yytext()));
-        if (zzCurrentPos != 0) return PyxlTypes.PYTHON_TEXT;
-        return PyxlTypes.PYTHON_TEXT;
-    }
+{SINGLE_QUOTED_STRING}[\ \t]*"\\"  {
+ yypushback(getSpaceLength(yytext())); if (zzCurrentPos != 0) return PyTokenTypes.SINGLE_QUOTED_STRING;
+ yybegin(PENDING_DOCSTRING); return PyTokenTypes.DOCSTRING; }
 
-    {SINGLE_QUOTED_STRING}[\ \t]*"\\" {
-        yypushback(getSpaceLength(yytext()));
-        if (zzCurrentPos != 0) return PyxlTypes.PYTHON_TEXT;
-        yybegin(PENDING_DOCSTRING); return PyxlTypes.PYTHON_TEXT;
-    }
+{TRIPLE_QUOTED_STRING}[\ \t]*"\\"  {
+ yypushback(getSpaceLength(yytext())); if (zzCurrentPos != 0) return PyTokenTypes.TRIPLE_QUOTED_STRING;
+ yybegin(PENDING_DOCSTRING); return PyTokenTypes.DOCSTRING; }
 
-    {TRIPLE_QUOTED_STRING}[\ \t]*"\\" {
-        yypushback(getSpaceLength(yytext()));
-        if (zzCurrentPos != 0) return PyxlTypes.PYTHON_TEXT;
-        yybegin(PENDING_DOCSTRING); return PyxlTypes.PYTHON_TEXT;
-    }
 }
 
-{END_OF_LINE_COMMENT}       { return PyxlTypes.COMMENT; }
+[\n]                        { return PyTokenTypes.LINE_BREAK; }
+{END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 
 <YYINITIAL, IN_DOCSTRING_OWNER> {
-    {WhiteSpace}+ { return PyxlTypes.PYTHON_TEXT; }
-    {TagHead} {
-        yypushback(yylength());
-        yybegin(PARSE_TAG_HEAD);
-    }
+{LONGINTEGER}         { return PyTokenTypes.INTEGER_LITERAL; }
+{INTEGER}             { return PyTokenTypes.INTEGER_LITERAL; }
+{FLOATNUMBER}         { return PyTokenTypes.FLOAT_LITERAL; }
+{IMAGNUMBER}          { return PyTokenTypes.IMAGINARY_LITERAL; }
+
+{SINGLE_QUOTED_STRING} { return PyTokenTypes.SINGLE_QUOTED_STRING; }
+{TRIPLE_QUOTED_STRING} { return PyTokenTypes.TRIPLE_QUOTED_STRING; }
+
+"and"                 { return PyTokenTypes.AND_KEYWORD; }
+"assert"              { return PyTokenTypes.ASSERT_KEYWORD; }
+"break"               { return PyTokenTypes.BREAK_KEYWORD; }
+"class"               { yybegin(IN_DOCSTRING_OWNER); return PyTokenTypes.CLASS_KEYWORD; }
+"continue"            { return PyTokenTypes.CONTINUE_KEYWORD; }
+"def"                 { yybegin(IN_DOCSTRING_OWNER); return PyTokenTypes.DEF_KEYWORD; }
+"del"                 { return PyTokenTypes.DEL_KEYWORD; }
+"elif"                { return PyTokenTypes.ELIF_KEYWORD; }
+"else"                { return PyTokenTypes.ELSE_KEYWORD; }
+"except"              { return PyTokenTypes.EXCEPT_KEYWORD; }
+"finally"             { return PyTokenTypes.FINALLY_KEYWORD; }
+"for"                 { return PyTokenTypes.FOR_KEYWORD; }
+"from"                { return PyTokenTypes.FROM_KEYWORD; }
+"global"              { return PyTokenTypes.GLOBAL_KEYWORD; }
+"if"                  { return PyTokenTypes.IF_KEYWORD; }
+"import"              { return PyTokenTypes.IMPORT_KEYWORD; }
+"in"                  { return PyTokenTypes.IN_KEYWORD; }
+"is"                  { return PyTokenTypes.IS_KEYWORD; }
+"lambda"              { return PyTokenTypes.LAMBDA_KEYWORD; }
+"not"                 { return PyTokenTypes.NOT_KEYWORD; }
+"or"                  { return PyTokenTypes.OR_KEYWORD; }
+"pass"                { return PyTokenTypes.PASS_KEYWORD; }
+"raise"               { return PyTokenTypes.RAISE_KEYWORD; }
+"return"              { return PyTokenTypes.RETURN_KEYWORD; }
+"try"                 { return PyTokenTypes.TRY_KEYWORD; }
+"while"               { return PyTokenTypes.WHILE_KEYWORD; }
+"yield"               { return PyTokenTypes.YIELD_KEYWORD; }
+
+"banan" { return PyTokenTypes.YIELD_KEYWORD; }
+
+{IDENTIFIER}          { return PyTokenTypes.IDENTIFIER; }
+
+"+="                  { return PyTokenTypes.PLUSEQ; }
+"-="                  { return PyTokenTypes.MINUSEQ; }
+"**="                 { return PyTokenTypes.EXPEQ; }
+"*="                  { return PyTokenTypes.MULTEQ; }
+"//="                 { return PyTokenTypes.FLOORDIVEQ; }
+"/="                  { return PyTokenTypes.DIVEQ; }
+"%="                  { return PyTokenTypes.PERCEQ; }
+"&="                  { return PyTokenTypes.ANDEQ; }
+"|="                  { return PyTokenTypes.OREQ; }
+"^="                  { return PyTokenTypes.XOREQ; }
+">>="                 { return PyTokenTypes.GTGTEQ; }
+"<<="                 { return PyTokenTypes.LTLTEQ; }
+"<<"                  { return PyTokenTypes.LTLT; }
+">>"                  { return PyTokenTypes.GTGT; }
+"**"                  { return PyTokenTypes.EXP; }
+"//"                  { return PyTokenTypes.FLOORDIV; }
+"<="                  { return PyTokenTypes.LE; }
+">="                  { return PyTokenTypes.GE; }
+"=="                  { return PyTokenTypes.EQEQ; }
+"!="                  { return PyTokenTypes.NE; }
+"<>"                  { return PyTokenTypes.NE_OLD; }
+"+"                   { return PyTokenTypes.PLUS; }
+"-"                   { return PyTokenTypes.MINUS; }
+"*"                   { return PyTokenTypes.MULT; }
+"/"                   { return PyTokenTypes.DIV; }
+"%"                   { return PyTokenTypes.PERC; }
+"&"                   { return PyTokenTypes.AND; }
+"|"                   { return PyTokenTypes.OR; }
+"^"                   { return PyTokenTypes.XOR; }
+"~"                   { return PyTokenTypes.TILDE; }
+"<"                   { return PyTokenTypes.LT; }
+">"                   { return PyTokenTypes.GT; }
+"("                   { return PyTokenTypes.LPAR; }
+")"                   { return PyTokenTypes.RPAR; }
+"["                   { return PyTokenTypes.LBRACKET; }
+"]"                   { return PyTokenTypes.RBRACKET; }
+"{"                   { return PyTokenTypes.LBRACE; }
+"}"                   { return PyTokenTypes.RBRACE; }
+"@"                   { return PyTokenTypes.AT; }
+","                   { return PyTokenTypes.COMMA; }
+":"                   { return PyTokenTypes.COLON; }
+
+"."                   { return PyTokenTypes.DOT; }
+"`"                   { return PyTokenTypes.TICK; }
+"="                   { return PyTokenTypes.EQ; }
+";"                   { return PyTokenTypes.SEMICOLON; }
+
+.                     { return PyTokenTypes.BAD_CHARACTER; }
 }
 
 <IN_DOCSTRING_OWNER> {
-    ":"(\ )*{END_OF_LINE_COMMENT}?"\n"          {
-        yypushback(yylength()-1);
-        yybegin(PENDING_DOCSTRING);
-        return PyxlTypes.PYTHON_TEXT;
-    }
+":"(\ )*{END_OF_LINE_COMMENT}?"\n"          { yypushback(yylength()-1); yybegin(PENDING_DOCSTRING); return PyTokenTypes.COLON; }
 }
 
 <PENDING_DOCSTRING> {
-    {SINGLE_QUOTED_STRING} {
-        if (zzInput == YYEOF) return PyxlTypes.PYTHON_TEXT;
-        else yybegin(YYINITIAL); return PyxlTypes.PYTHON_TEXT;
-    }
+{SINGLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
+                                 else yybegin(YYINITIAL); return PyTokenTypes.SINGLE_QUOTED_STRING; }
+{TRIPLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
+                                 else yybegin(YYINITIAL); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
+{DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); yybegin(YYINITIAL); return PyTokenTypes.DOCSTRING; }
+{DOCSTRING_LITERAL}[\ \t]*"\\"  {
+ yypushback(getSpaceLength(yytext())); return PyTokenTypes.DOCSTRING; }
 
-    {TRIPLE_QUOTED_STRING} {
-        if (zzInput == YYEOF) return PyxlTypes.PYTHON_TEXT;
-        else yybegin(YYINITIAL); return PyxlTypes.PYTHON_TEXT;
-    }
-
-    {DOCSTRING_LITERAL}[\ \t]*[\n;] {
-        yypushback(getSpaceLength(yytext()));
-        yybegin(YYINITIAL);
-        return PyxlTypes.PYTHON_TEXT;
-    }
-
-    {DOCSTRING_LITERAL}[\ \t]*"\\" {
-        yypushback(getSpaceLength(yytext()));
-        return PyxlTypes.PYTHON_TEXT;
-    }
-
-    . {
-        yypushback(1); yybegin(YYINITIAL);
-    }
+.                               { yypushback(1); yybegin(YYINITIAL); }
 }
 
-<PARSE_TAG_HEAD> {
-    "<" {
-        return PyxlTypes.LEFT_ANGLE;
-    }
-
-    ">" {
-        openTag(tagName);
-        return PyxlTypes.RIGHT_ANGLE;
-    }
-
-    {Identifier} {
-        tagName = yytext().toString();
-        return PyxlTypes.IDENTIFIER;
-    }
-    {AttributeName} "=" {
-        yypushback(1);
-        return PyxlTypes.ATTR_NAME;
-    }
-
-    {QuotedValue} {
-        return PyxlTypes.QUOTED_VALUE;
-    }
-
-    "/>" {
-        yybegin(tagStack.size() == 0 ? YYINITIAL : PARSE_TAG_CONTENT);
-        return PyxlTypes.SELF_CLOSE_END;
-    }
-
-    "=" {
-        return PyxlTypes.EQ;
-    }
-
-
-}
-
-<PARSE_TAG_CONTENT> {
-    "<" {
-        return PyxlTypes.LEFT_ANGLE;
-    }
-
-    "<" {Identifier} {
-          yypushback(yylength());
-          yybegin(PARSE_TAG_HEAD);
-    }
-
-    "</" {
-        yybegin(PARSE_TAG_TAIL);
-        return PyxlTypes.START_OF_CLOSE_TAG;
-    }
-
-    [^<]+ {
-        return PyxlTypes.TEXT;
-    }
-}
-
-<PARSE_TAG_CONTENT, YYINITIAL, IN_DOCSTRING_OWNER> {
-    {PYXL_COMMENTED_CONTENT} {
-        return PyxlTypes.COMMENT;
-    }
-}
-
-<PARSE_TAG_TAIL> {
-    ">" {
-        tagStack.pop();
-        yybegin(tagStack.size() == 0 ? YYINITIAL : PARSE_TAG_CONTENT);
-        return PyxlTypes.RIGHT_ANGLE;
-    }
-
-    {Identifier} {
-        tagName = yytext().toString();
-        if(tagStack.size() == 0 || !tagName.equals(tagStack.peek())) {
-            return TokenType.ERROR_ELEMENT;
-        }
-
-        return PyxlTypes.IDENTIFIER;
-    }
-
-    {WhiteSpace} { return PyxlTypes.WHITE_SPACE; }
-    [^] { return TokenType.BAD_CHARACTER; }
-}
-
-{WhiteSpace}+ { return PyxlTypes.WHITE_SPACE; }
-[^] { return PyxlTypes.PYTHON_TEXT; }
