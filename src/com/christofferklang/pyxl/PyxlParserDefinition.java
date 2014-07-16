@@ -115,13 +115,21 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                         myBuilder.advanceLexer();
                         pyxl.done(PyElementTypes.CALL_EXPRESSION);
                         return;
+                    } else if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
+                        myBuilder.advanceLexer();
+                        super.parseExpression();
+                        if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_END) {
+                            myBuilder.advanceLexer();
+                        } else {
+                            break;  // error
+                        }
                     } else {
                         myBuilder.advanceLexer();
                     }
                 }
             }
 
-            myBuilder.error("pyxl expected");
+                myBuilder.error("pyxl expected");
             pyxl.done(PyElementTypes.CALL_EXPRESSION);
         }
 
