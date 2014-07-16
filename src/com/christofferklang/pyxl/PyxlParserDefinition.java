@@ -101,8 +101,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                 // Parse content.
                 while (!myBuilder.eof()) {
-                    if (myBuilder.getTokenType() == PyTokenTypes.IDENTIFIER ||
-                            myBuilder.getTokenType() == PyTokenTypes.SPACE) {
+                    if (myBuilder.getTokenType() == PyxlTokenTypes.STRING) {
                         myBuilder.advanceLexer();
                     } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGBEGIN) {
                         // Another pyxl tag just got started.
@@ -124,11 +123,11 @@ public class PyxlParserDefinition extends PythonParserDefinition {
          */
         private void parsePyxlAttributes() {
             // Parse the current attribute="value" pair, if any.
-            if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRIBUTE) {
+            if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
                 myBuilder.advanceLexer();
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
-                    if (myBuilder.getTokenType() == PyxlTokenTypes.VALUE) {
+                    if (myBuilder.getTokenType() == PyTokenTypes.ATTRVALUE) {
                         myBuilder.advanceLexer();
 
                         // Parse remaining attributes.
