@@ -3,7 +3,7 @@ package com.christofferklang.pyxl;
 import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.tree.IElementType;
 import com.jetbrains.python.PyTokenTypes;
-import com.christofferklang.pyxl.PyPyxlTokenTypes;
+import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.intellij.openapi.util.text.StringUtil;
 
 %%
@@ -137,7 +137,7 @@ return PyTokenTypes.DOCSTRING; }
 
 
 <IN_PYXL_PYTHON_EMBED> {
-"}"                   { yybegin(IN_PYXL_BLOCK); return PyPyxlTokenTypes.PYTHON_EMBED_END; }
+"}"                   { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.EMBED_END; }
 
 }
 
@@ -181,7 +181,7 @@ return PyTokenTypes.DOCSTRING; }
 "while"               { return PyTokenTypes.WHILE_KEYWORD; }
 "yield"               { return PyTokenTypes.YIELD_KEYWORD; }
 
-"[banan]"               { return PyPyxlTokenTypes.BANANA_DUMMY; }
+"[banan]"               { return PyxlTokenTypes.BANANA_DUMMY; }
 
 {IDENTIFIER}          { return PyTokenTypes.IDENTIFIER; }
 
@@ -238,21 +238,21 @@ return PyTokenTypes.DOCSTRING; }
 
 <IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
 
-{PYXL_TAGBEGIN}               { yybegin(IN_PYXL_BLOCK); return PyPyxlTokenTypes.PYXL_TAGBEGIN; }
+{PYXL_TAGBEGIN}               { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGBEGIN; }
 
 }
 
 <IN_PYXL_BLOCK> {
-"</frag>"               { yybegin(IN_DOCSTRING_OWNER); return PyPyxlTokenTypes.PYXL_FRAGEND; }
-">"                     { return PyPyxlTokenTypes.PYXL_TAGEND; }
-"/>"                    { return PyPyxlTokenTypes.PYXL_TAGENDANDCLOSE; }
-{PYXL_TAGCLOSE}        { return PyPyxlTokenTypes.PYXL_TAGCLOSE; }
-{PYXL_IDENTIFIER}       { return PyPyxlTokenTypes.PYXL_IDENTIFIER; }
+"</frag>"               { yybegin(IN_DOCSTRING_OWNER); return PyxlTokenTypes.FRAGEND; }
+">"                     { return PyxlTokenTypes.TAGEND; }
+"/>"                    { return PyxlTokenTypes.TAGENDANDCLOSE; }
+{PYXL_TAGCLOSE}        { return PyxlTokenTypes.TAGCLOSE; }
+{PYXL_IDENTIFIER}       { return PyxlTokenTypes.IDENTIFIER; }
 {PYXL_QUOTED_STRING} { return PyTokenTypes.SINGLE_QUOTED_STRING; }
-{PYXL_QUOTED_PYTHON_EMBED} { return PyTokenTypes.PYTHON_EMBED_START; }
+{PYXL_QUOTED_PYTHON_EMBED} { return PyTokenTypes.EMBED_START; }
 "="                   { return PyTokenTypes.EQ; }
-"{"                   { yybegin(IN_PYXL_PYTHON_EMBED); return PyPyxlTokenTypes.PYTHON_EMBED_START; }
-.                       { return PyPyxlTokenTypes.PYXL_BADCHAR; }
+"{"                   { yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+.                       { return PyxlTokenTypes.BADCHAR; }
 }
 
 <IN_DOCSTRING_OWNER> {
