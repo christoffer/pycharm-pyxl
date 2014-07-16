@@ -144,6 +144,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 }
 
                 myBuilder.error("pyxl attr expected");
+                attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
+
             }
         }
     }

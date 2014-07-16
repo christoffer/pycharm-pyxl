@@ -81,10 +81,12 @@ PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
 // a string that doesn't contain a {} (e.g. no python embed)
 PYXL_STRING_INSIDES = ([^\\\"\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 // a quoted string without a python embed
-PYXL_ATTRVALUE = \"{PYXL_STRING_INSIDES}(\"|\\)?
+PYXL_ATTRVALUE = [\"']{PYXL_STRING_INSIDES}[\"']
 // a quoted string with a python embed
-PYXL_QUOTED_PYTHON_EMBED = \"\{{PYXL_STRING_INSIDES}\}(\"|\\)?
-// a string in a pyxl block, outside tags and quotes (can't contain {} or <>)
+PYXL_QUOTED_PYTHON_EMBED = [\"']{PYXL_PYTHON_EMBED}[\"']
+// a normal python embed (with no quotes)
+PYXL_PYTHON_EMBED = \{{PYXL_STRING_INSIDES}\}
+// a string in a pyxl block, outside tags and quotes (can't contain {}  <> # etc)
 PYXL_BLOCK_STRING = ([^<{#])*?
 
 %state IN_PYXL_BLOCK
@@ -93,6 +95,7 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 
 %{
 
+boolean inpyxltag;
 Stack<String> tagStack = new Stack<String>();
 private void openTag() {
     tagStack.push("Moo");
@@ -134,7 +137,8 @@ return yylength()-s.length();
 
 
 <IN_PYXL_PYTHON_EMBED> {
-"}"                   { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.EMBED_END; }
+"}"                   { yybegin(inpyxltag ? IN_PYXL_TAG : IN_PYXL_BLOCK); return PyxlTokenTypes.EMBED_END; }
+"}\""                   { yybegin(inpyxltag ? IN_PYXL_TAG : IN_PYXL_BLOCK); return PyxlTokenTypes.EMBED_END; }
 
 }
 
@@ -272,7 +276,7 @@ return PyTokenTypes.DOCSTRING; }
 }
 
 <IN_PYXL_BLOCK> {
-"{"                   { yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                   { inpyxltag=false; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 {PYXL_TAGCLOSE}        { return closeTag() ? PyxlTokenTypes.TAGCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
@@ -282,8 +286,10 @@ return PyTokenTypes.DOCSTRING; }
 ">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
 "/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
+// Nils: For now, comment these out until the parser is ready for python embeds in tags
+//{PYXL_QUOTED_PYTHON_EMBED}              { inpyxltag=true; yypushback(yylength()-2); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+//{PYXL_PYTHON_EMBED}               { inpyxltag=true; yypushback(yylength()-1); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 {PYXL_ATTRVALUE} { return PyxlTokenTypes.ATTRVALUE; }
-//{PYXL_QUOTED_PYTHON_EMBED} { return PyTokenTypes.EMBED_START; }
 "="                   { return PyTokenTypes.EQ; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
