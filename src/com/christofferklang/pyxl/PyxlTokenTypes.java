@@ -7,9 +7,6 @@ public class PyxlTokenTypes {
         // Prevent instantiation
     }
 
-    /** Dummy token to test out custom tokenization */
-    public static final PyElementType BANANA_DUMMY = new PyElementType("BANANA DUMMY");
-
     public static final PyElementType FRAGBEGIN = new PyElementType("PYXL FRAG BEGIN");
     public static final PyElementType BADCHAR = new PyElementType("PYXL BAD CHAR");
     public static final PyElementType FRAGEND = new PyElementType("PYXL FRAG END");
