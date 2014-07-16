@@ -6,6 +6,7 @@ import com.jetbrains.python.PyTokenTypes;
 import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.intellij.openapi.util.text.StringUtil;
 import java.util.Stack;
+import com.jetbrains.python.psi.PyElementType;
 
 %%
 
@@ -96,7 +97,10 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 
 %{
 
+int embedBraceCount = 0;
+
 boolean inpyxltag;
+
 Stack<String> tagStack = new Stack<String>();
 private void openTag() {
     tagStack.push("Moo");
@@ -110,6 +114,7 @@ private boolean closeTag() {
         yybegin(IN_DOCSTRING_OWNER);    // done with pyxl code.
         return true;
     } else if (size == 0) {
+        yybegin(IN_DOCSTRING_OWNER);    // done with pyxl code.
         return false;   // error
     } else {
         tagStack.pop();
@@ -123,6 +128,8 @@ private boolean closeTag() {
 %state PENDING_DOCSTRING
 %state IN_DOCSTRING_OWNER
 %{
+
+
 private int getSpaceLength(CharSequence string) {
 String string1 = string.toString();
 string1 = StringUtil.trimEnd(string1, "\\");
@@ -131,23 +138,80 @@ final String s = StringUtil.trimTrailing(string1);
 return yylength()-s.length();
 
 }
-%}
 
-%%
-
-
-
-<IN_PYXL_PYTHON_EMBED> {
-"}"                   { yybegin(inpyxltag ? IN_PYXL_TAG : IN_PYXL_BLOCK); return PyxlTokenTypes.EMBED_END; }
-"}\""                   { yybegin(inpyxltag ? IN_PYXL_TAG : IN_PYXL_BLOCK); return PyxlTokenTypes.EMBED_END; }
-
+private PyElementType handleRightBrace() {
+    if (--embedBraceCount == 0) {
+        yybegin(inpyxltag ? IN_PYXL_TAG : IN_PYXL_BLOCK);
+        return PyxlTokenTypes.EMBED_END;
+    } else {
+        return PyTokenTypes.RBRACE;
+    }
 }
 
+%}
+%%
 
 [\ ]                        { return PyTokenTypes.SPACE; }
 [\t]                        { return PyTokenTypes.TAB; }
 [\f]                        { return PyTokenTypes.FORMFEED; }
 "\\"                        { return PyTokenTypes.BACKSLASH; }
+
+
+<IN_PYXL_PYTHON_EMBED> {
+{SINGLE_QUOTED_STRING} { return PyTokenTypes.SINGLE_QUOTED_STRING; }
+{TRIPLE_QUOTED_STRING} { return PyTokenTypes.TRIPLE_QUOTED_STRING; }
+"{"                     { embedBraceCount++; return PyTokenTypes.LBRACE; }
+"}"                   { return handleRightBrace(); }
+"}\""                   { return handleRightBrace(); }
+
+}
+
+
+<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
+
+{PYXL_TAGBEGIN}               { openTag(); return PyxlTokenTypes.TAGBEGIN; }
+
+}
+
+<IN_PYXL_BLOCK> {
+"{"                   { embedBraceCount++; inpyxltag=false; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+{PYXL_TAGCLOSE}        { return closeTag() ? PyxlTokenTypes.TAGCLOSE : PyxlTokenTypes.BADCHAR; }
+{PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
+.                       { return PyxlTokenTypes.BADCHAR; }
+}
+
+<IN_PYXL_TAG> {
+">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
+"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
+{PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
+// Nils: For now, handle python embeds as attribute values.
+{PYXL_QUOTED_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
+{PYXL_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
+//{PYXL_QUOTED_PYTHON_EMBED}              { embedBraceCount++; inpyxltag=true; yypushback(yylength()-2); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+//{PYXL_PYTHON_EMBED}               { embedBraceCount++; inpyxltag=true; yypushback(yylength()-1); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
+{PYXL_ATTRVALUE2} { return PyxlTokenTypes.ATTRVALUE; }
+"="                   { return PyTokenTypes.EQ; }
+.                       { return PyxlTokenTypes.BADCHAR; }
+
+}
+
+<IN_DOCSTRING_OWNER> {
+":"(\ )*{END_OF_LINE_COMMENT}?"\n"          { yypushback(yylength()-1); yybegin(PENDING_DOCSTRING); return PyTokenTypes.COLON; }
+}
+
+<PENDING_DOCSTRING> {
+{SINGLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
+                                 else yybegin(YYINITIAL); return PyTokenTypes.SINGLE_QUOTED_STRING; }
+{TRIPLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
+                                 else yybegin(YYINITIAL); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
+{DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); yybegin(YYINITIAL); return PyTokenTypes.DOCSTRING; }
+{DOCSTRING_LITERAL}[\ \t]*"\\"  {
+ yypushback(getSpaceLength(yytext())); return PyTokenTypes.DOCSTRING; }
+
+.                               { yypushback(1); yybegin(YYINITIAL); }
+}
+
 
 <YYINITIAL> {
 [\n]                        { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyTokenTypes.LINE_BREAK; }
@@ -269,49 +333,3 @@ return PyTokenTypes.DOCSTRING; }
 
 .                     { return PyTokenTypes.BAD_CHARACTER; }
 }
-
-<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
-
-{PYXL_TAGBEGIN}               { openTag(); return PyxlTokenTypes.TAGBEGIN; }
-
-}
-
-<IN_PYXL_BLOCK> {
-"{"                   { inpyxltag=false; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_TAGCLOSE}        { return closeTag() ? PyxlTokenTypes.TAGCLOSE : PyxlTokenTypes.BADCHAR; }
-{PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
-.                       { return PyxlTokenTypes.BADCHAR; }
-}
-
-<IN_PYXL_TAG> {
-">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
-"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
-{PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
-// Nils: For now, handle python embeds as attribute values.
-{PYXL_QUOTED_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
-{PYXL_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
-//{PYXL_QUOTED_PYTHON_EMBED}              { inpyxltag=true; yypushback(yylength()-2); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-//{PYXL_PYTHON_EMBED}               { inpyxltag=true; yypushback(yylength()-1); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
-{PYXL_ATTRVALUE2} { return PyxlTokenTypes.ATTRVALUE; }
-"="                   { return PyTokenTypes.EQ; }
-.                       { return PyxlTokenTypes.BADCHAR; }
-
-}
-
-<IN_DOCSTRING_OWNER> {
-":"(\ )*{END_OF_LINE_COMMENT}?"\n"          { yypushback(yylength()-1); yybegin(PENDING_DOCSTRING); return PyTokenTypes.COLON; }
-}
-
-<PENDING_DOCSTRING> {
-{SINGLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
-                                 else yybegin(YYINITIAL); return PyTokenTypes.SINGLE_QUOTED_STRING; }
-{TRIPLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
-                                 else yybegin(YYINITIAL); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
-{DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); yybegin(YYINITIAL); return PyTokenTypes.DOCSTRING; }
-{DOCSTRING_LITERAL}[\ \t]*"\\"  {
- yypushback(getSpaceLength(yytext())); return PyTokenTypes.DOCSTRING; }
-
-.                               { yypushback(1); yybegin(YYINITIAL); }
-}
-
