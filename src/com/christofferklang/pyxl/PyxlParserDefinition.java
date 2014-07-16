@@ -10,7 +10,10 @@ import com.jetbrains.python.PyElementTypes;
 import com.jetbrains.python.PyTokenTypes;
 import com.jetbrains.python.PythonParserDefinition;
 import com.jetbrains.python.lexer.PythonIndentingProcessor;
-import com.jetbrains.python.parsing.*;
+import com.jetbrains.python.parsing.ExpressionParsing;
+import com.jetbrains.python.parsing.ParsingContext;
+import com.jetbrains.python.parsing.PyParser;
+import com.jetbrains.python.parsing.StatementParsing;
 import com.jetbrains.python.psi.LanguageLevel;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +32,6 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             super(new PyxlLexer((Reader) null), TokenSet.EMPTY);
         }
     }
-
 
     @NotNull
     public PsiParser createParser(Project project) {
