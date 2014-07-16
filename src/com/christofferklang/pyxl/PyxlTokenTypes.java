@@ -7,9 +7,7 @@ public class PyxlTokenTypes {
         // Prevent instantiation
     }
 
-    public static final PyElementType FRAGBEGIN = new PyElementType("PYXL FRAG BEGIN");
     public static final PyElementType BADCHAR = new PyElementType("PYXL BAD CHAR");
-    public static final PyElementType FRAGEND = new PyElementType("PYXL FRAG END");
     public static final PyElementType ATTRNAME = new PyElementType("PYXL ATTRNAME");
     public static final PyElementType ATTRVALUE = new PyElementType("PYXL ATTRVALUE");
     public static final PyElementType TAGEND = new PyElementType("PYXL TAG END");

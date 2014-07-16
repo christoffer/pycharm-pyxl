@@ -5,6 +5,7 @@ import com.intellij.psi.tree.IElementType;
 import com.jetbrains.python.PyTokenTypes;
 import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.intellij.openapi.util.text.StringUtil;
+import java.util.Stack;
 
 %%
 
@@ -77,16 +78,43 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]**
 PYXL_TAGBEGIN = "<" {IDENTIFIER}
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
-
 // a string that doesn't contain a {} (e.g. no python embed)
 PYXL_STRING_INSIDES = ([^\\\"\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 // a quoted string without a python embed
 PYXL_ATTRVALUE = \"{PYXL_STRING_INSIDES}(\"|\\)?
 // a quoted string with a python embed
 PYXL_QUOTED_PYTHON_EMBED = \"\{{PYXL_STRING_INSIDES}\}(\"|\\)?
+// a string in a pyxl block, outside tags and quotes (can't contain {} or <>)
+PYXL_BLOCK_STRING = ([^<{#])*?
+
 %state IN_PYXL_BLOCK
+%state IN_PYXL_TAG
 %state IN_PYXL_PYTHON_EMBED
 
+%{
+
+Stack<String> tagStack = new Stack<String>();
+private void openTag() {
+    tagStack.push("Moo");
+    yybegin(IN_PYXL_TAG);
+}
+
+private boolean closeTag() {
+    int size = tagStack.size();
+    if (size == 1) {
+        tagStack.pop();
+        yybegin(IN_DOCSTRING_OWNER);    // done with pyxl code.
+        return true;
+    } else if (size == 0) {
+        return false;   // error
+    } else {
+        tagStack.pop();
+        yybegin(IN_PYXL_BLOCK); // back to pyxl-block state
+        return true;
+    }
+}
+
+%}
 
 %state PENDING_DOCSTRING
 %state IN_DOCSTRING_OWNER
@@ -239,21 +267,26 @@ return PyTokenTypes.DOCSTRING; }
 
 <IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
 
-{PYXL_TAGBEGIN}               { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGBEGIN; }
+{PYXL_TAGBEGIN}               { openTag(); return PyxlTokenTypes.TAGBEGIN; }
 
 }
 
 <IN_PYXL_BLOCK> {
-"</frag>"               { yybegin(IN_DOCSTRING_OWNER); return PyxlTokenTypes.FRAGEND; }
-">"                     { return PyxlTokenTypes.TAGEND; }
-"/>"                    { return PyxlTokenTypes.TAGENDANDCLOSE; }
-{PYXL_TAGCLOSE}        { return PyxlTokenTypes.TAGCLOSE; }
+"{"                   { yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+{PYXL_TAGCLOSE}        { return closeTag() ? PyxlTokenTypes.TAGCLOSE : PyxlTokenTypes.BADCHAR; }
+{PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
+.                       { return PyxlTokenTypes.BADCHAR; }
+}
+
+<IN_PYXL_TAG> {
+">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
+"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
 {PYXL_ATTRVALUE} { return PyxlTokenTypes.ATTRVALUE; }
 //{PYXL_QUOTED_PYTHON_EMBED} { return PyTokenTypes.EMBED_START; }
 "="                   { return PyTokenTypes.EQ; }
-"{"                   { yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 .                       { return PyxlTokenTypes.BADCHAR; }
+
 }
 
 <IN_DOCSTRING_OWNER> {
