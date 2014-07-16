@@ -93,10 +93,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             if (myBuilder.getTokenType() == PyxlTokenTypes.TAGENDANDCLOSE) {
                 // The tag was self-closed ( /> ).
                 myBuilder.advanceLexer();
-                pyxl.done(PyElementTypes.STRING_LITERAL_EXPRESSION);
+                pyxl.done(PyElementTypes.CALL_EXPRESSION);
                 return;
             } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGEND) {
-                // The tag has content!
+                // The tag has content (even empty content counts).
                 myBuilder.advanceLexer();
 
                 // Parse content.
@@ -108,7 +108,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                         parsePyxlTag();
                     } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGCLOSE) {
                         // The tag got closed by </tag>.
-                        pyxl.done(PyElementTypes.STRING_LITERAL_EXPRESSION);
+                        myBuilder.advanceLexer();
+                        pyxl.done(PyElementTypes.CALL_EXPRESSION);
                         return;
                     } else {
                         myBuilder.advanceLexer();
@@ -117,7 +118,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             }
 
             myBuilder.error("pyxl expected");
-            pyxl.done(PyElementTypes.STRING_LITERAL_EXPRESSION);
+            pyxl.done(PyElementTypes.CALL_EXPRESSION);
         }
 
         /**
@@ -126,6 +127,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
         private void parsePyxlAttributes() {
             // Parse the current attribute="value" pair, if any.
             if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
+                final PsiBuilder.Marker attr = myBuilder.mark();
                 myBuilder.advanceLexer();
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
@@ -133,6 +135,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                         myBuilder.advanceLexer();
 
                         // Parse remaining attributes.
+                        attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
                         parsePyxlAttributes();
                         return;
                     }
