@@ -81,7 +81,8 @@ PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
 // a string that doesn't contain a {} (e.g. no python embed)
 PYXL_STRING_INSIDES = ([^\\\"\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 // a quoted string without a python embed
-PYXL_ATTRVALUE = [\"']{PYXL_STRING_INSIDES}[\"']
+PYXL_ATTRVALUE1 = '{PYXL_STRING_INSIDES}'
+PYXL_ATTRVALUE2 = \"{PYXL_STRING_INSIDES}\"
 // a quoted string with a python embed
 PYXL_QUOTED_PYTHON_EMBED = [\"']{PYXL_PYTHON_EMBED}[\"']
 // a normal python embed (with no quotes)
@@ -286,10 +287,13 @@ return PyTokenTypes.DOCSTRING; }
 ">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
 "/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
-// Nils: For now, comment these out until the parser is ready for python embeds in tags
+// Nils: For now, handle python embeds as attribute values.
+{PYXL_QUOTED_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
+{PYXL_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
 //{PYXL_QUOTED_PYTHON_EMBED}              { inpyxltag=true; yypushback(yylength()-2); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 //{PYXL_PYTHON_EMBED}               { inpyxltag=true; yypushback(yylength()-1); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_ATTRVALUE} { return PyxlTokenTypes.ATTRVALUE; }
+{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
+{PYXL_ATTRVALUE2} { return PyxlTokenTypes.ATTRVALUE; }
 "="                   { return PyTokenTypes.EQ; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
