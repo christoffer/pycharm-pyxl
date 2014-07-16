@@ -36,6 +36,8 @@ IDENT_START = [a-zA-Z_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:
 IDENT_CONTINUE = [a-zA-Z0-9_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:]|[:unicode_titlecase_letter:]|[:unicode_modifier_letter:]|[:unicode_other_letter:]|[:unicode_letter_number:]|[:unicode_non_spacing_mark:]|[:unicode_combining_spacing_mark:]|[:unicode_decimal_digit_number:]|[:unicode_connector_punctuation:]
 IDENTIFIER = {IDENT_START}{IDENT_CONTINUE}**
 
+
+
 FLOATNUMBER=({POINTFLOAT})|({EXPONENTFLOAT})
 POINTFLOAT=(({INTPART})?{FRACTION})|({INTPART}\.)
 EXPONENTFLOAT=(({INTPART})|({POINTFLOAT})){EXPONENT}
@@ -70,8 +72,23 @@ ONE_TWO_APOS = ('[^']) | ('\\[^]) | (''[^']) | (''\\[^])
 APOS_STRING_CHAR = [^\\'] | {ANY_ESCAPE_SEQUENCE} | {ONE_TWO_APOS}
 TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
+
+// NILS:
+PYXL_IDENTIFIER = {IDENT_START}[a-zA-Z0-9_-]**
+PYXL_TAGBEGIN = "<" {IDENTIFIER}
+PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
+
+// a string that doesn't contain a {} (e.g. no python embed)
+PYXL_STRING_INSIDES = ([^\\\"\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
+// a quoted string without a python embed
+PYXL_QUOTED_STRING = \"{PYXL_STRING_INSIDES}(\"|\\)?
+// a quoted string with a python embed
+PYXL_QUOTED_PYTHON_EMBED = \"\{{PYXL_STRING_INSIDES}\}(\"|\\)?
+
 %state PENDING_DOCSTRING
 %state IN_DOCSTRING_OWNER
+%state IN_PYXL_BLOCK
+%state IN_PYXL_PYTHON_EMBED
 %{
 private int getSpaceLength(CharSequence string) {
 String string1 = string.toString();
@@ -118,7 +135,16 @@ return PyTokenTypes.DOCSTRING; }
 [\n]                        { return PyTokenTypes.LINE_BREAK; }
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 
-<YYINITIAL, IN_DOCSTRING_OWNER> {
+
+<IN_PYXL_PYTHON_EMBED> {
+"}"                   { yybegin(IN_PYXL_BLOCK); return PyPyxlTokenTypes.PYTHON_EMBED_END; }
+
+}
+
+
+
+
+<YYINITIAL, IN_DOCSTRING_OWNER, IN_PYXL_PYTHON_EMBED> {
 {LONGINTEGER}         { return PyTokenTypes.INTEGER_LITERAL; }
 {INTEGER}             { return PyTokenTypes.INTEGER_LITERAL; }
 {FLOATNUMBER}         { return PyTokenTypes.FLOAT_LITERAL; }
@@ -206,7 +232,27 @@ return PyTokenTypes.DOCSTRING; }
 "="                   { return PyTokenTypes.EQ; }
 ";"                   { return PyTokenTypes.SEMICOLON; }
 
+
 .                     { return PyTokenTypes.BAD_CHARACTER; }
+}
+
+<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
+
+{PYXL_TAGBEGIN}               { yybegin(IN_PYXL_BLOCK); return PyPyxlTokenTypes.PYXL_TAGBEGIN; }
+
+}
+
+<IN_PYXL_BLOCK> {
+"</frag>"               { yybegin(IN_DOCSTRING_OWNER); return PyPyxlTokenTypes.PYXL_FRAGEND; }
+">"                     { return PyPyxlTokenTypes.PYXL_TAGEND; }
+"/>"                    { return PyPyxlTokenTypes.PYXL_TAGENDANDCLOSE; }
+{PYXL_TAGCLOSE}        { return PyPyxlTokenTypes.PYXL_TAGCLOSE; }
+{PYXL_IDENTIFIER}       { return PyPyxlTokenTypes.PYXL_IDENTIFIER; }
+{PYXL_QUOTED_STRING} { return PyTokenTypes.SINGLE_QUOTED_STRING; }
+{PYXL_QUOTED_PYTHON_EMBED} { return PyTokenTypes.PYTHON_EMBED_START; }
+"="                   { return PyTokenTypes.EQ; }
+"{"                   { yybegin(IN_PYXL_PYTHON_EMBED); return PyPyxlTokenTypes.PYTHON_EMBED_START; }
+.                       { return PyPyxlTokenTypes.PYXL_BADCHAR; }
 }
 
 <IN_DOCSTRING_OWNER> {
