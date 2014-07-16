@@ -10,7 +10,8 @@ public class PyxlTokenTypes {
     public static final PyElementType FRAGBEGIN = new PyElementType("PYXL FRAG BEGIN");
     public static final PyElementType BADCHAR = new PyElementType("PYXL BAD CHAR");
     public static final PyElementType FRAGEND = new PyElementType("PYXL FRAG END");
-    public static final PyElementType IDENTIFIER = new PyElementType("PYXL IDENTIFIER");
+    public static final PyElementType ATTRNAME = new PyElementType("PYXL ATTRNAME");
+    public static final PyElementType ATTRVALUE = new PyElementType("PYXL ATTRVALUE");
     public static final PyElementType TAGEND = new PyElementType("PYXL TAG END");
     public static final PyElementType TAGCLOSE = new PyElementType("PYXL TAG CLOSE");
 
@@ -18,4 +19,6 @@ public class PyxlTokenTypes {
     public static final PyElementType TAGBEGIN = new PyElementType("PYXL TAG BEGIN");
     public static final PyElementType EMBED_START = new PyElementType("PYXL PYTHON EMBED BEGIN");
     public static final PyElementType EMBED_END = new PyElementType("PYXL PYTHON EMBED END");
+    public static final PyElementType STRING = new PyElementType("PYXL STRING");
+
 }

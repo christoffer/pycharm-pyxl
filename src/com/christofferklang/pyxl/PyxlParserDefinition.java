@@ -110,6 +110,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                         // The tag got closed by </tag>.
                         pyxl.done(PyElementTypes.STRING_LITERAL_EXPRESSION);
                         return;
+                    } else {
+                        myBuilder.advanceLexer();
                     }
                 }
             }
@@ -127,7 +129,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 myBuilder.advanceLexer();
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
-                    if (myBuilder.getTokenType() == PyTokenTypes.ATTRVALUE) {
+                    if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
                         myBuilder.advanceLexer();
 
                         // Parse remaining attributes.
