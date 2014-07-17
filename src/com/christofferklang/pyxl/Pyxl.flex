@@ -92,14 +92,17 @@ PYXL_PYTHON_EMBED = \{{PYXL_STRING_INSIDES}\}
 PYXL_BLOCK_STRING = ([^<{#])*?
 
 %state IN_PYXL_BLOCK
+%state IN_PYXL_COMMENT
 %state IN_PYXL_TAG
 %state IN_PYXL_PYTHON_EMBED
 
 %{
 
+int commentStartState = YYINITIAL;
 int embedBraceCount = 0;
 
 boolean inpyxltag;
+
 
 Stack<String> tagStack = new Stack<String>();
 private void openTag() {
@@ -156,6 +159,11 @@ private PyElementType handleRightBrace() {
 [\f]                        { return PyTokenTypes.FORMFEED; }
 "\\"                        { return PyTokenTypes.BACKSLASH; }
 
+<IN_PYXL_COMMENT> {
+    "-->" { yybegin(commentStartState); return PyTokenTypes.END_OF_LINE_COMMENT; }
+    [^\-]|(-[^\-])|(--[^>]) { return PyTokenTypes.END_OF_LINE_COMMENT; }
+    [^] { return PyTokenTypes.BAD_CHARACTER; }
+}
 
 <IN_PYXL_PYTHON_EMBED> {
 {SINGLE_QUOTED_STRING} { return PyTokenTypes.SINGLE_QUOTED_STRING; }
@@ -176,6 +184,12 @@ private PyElementType handleRightBrace() {
 }
 
 <IN_PYXL_BLOCK> {
+"<!--" {
+    commentStartState = yystate(); // Remember which state we should return to after the comment
+    yybegin(IN_PYXL_COMMENT);
+    return PyTokenTypes.END_OF_LINE_COMMENT;
+}
+
 "{"                   { embedBraceCount++; inpyxltag=false; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 "</if>"             { return closeTag() ? PyxlTokenTypes.IFTAGCLOSE : PyxlTokenTypes.BADCHAR; }
 "</else>"             { return closeTag() ? PyxlTokenTypes.ELSETAGCLOSE : PyxlTokenTypes.BADCHAR; }
