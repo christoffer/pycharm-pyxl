@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class PyxlParserDefinition extends PythonParserDefinition {
+
     @NotNull
     @Override
     public Lexer createLexer(Project project) {
@@ -65,11 +66,12 @@ public class PyxlParserDefinition extends PythonParserDefinition {
         }
     }
 
-    private class PyxlExpressionParsing extends ExpressionParsing {
-        private List<PyElementType> pyxlBeginTags = Arrays.asList(
-                PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAGBEGIN);
-        private List<PyElementType> pyxlCloseTags = Arrays.asList(
-                PyxlTokenTypes.TAGCLOSE, PyxlTokenTypes.IFTAGCLOSE);
+    private static class PyxlExpressionParsing extends ExpressionParsing {
+        private static final List<PyElementType> PYXL_BEGIN_TAGS =
+                Arrays.asList(PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAGBEGIN);
+
+        private static final List<PyElementType> PYXL_CLOSE_TAGS =
+                Arrays.asList(PyxlTokenTypes.TAGCLOSE, PyxlTokenTypes.IFTAGCLOSE);
 
         public PyxlExpressionParsing(ParsingContext context) {
             super(context);
@@ -79,7 +81,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             boolean match = super.parsePrimaryExpression(isTargetExpression);
             if (!match) {
                 final IElementType firstToken = myBuilder.getTokenType();
-                if (pyxlBeginTags.contains(firstToken)) {
+                //noinspection SuspiciousMethodCalls
+                if (PYXL_BEGIN_TAGS.contains(firstToken)) {
                     parsePyxlTag();
                     return true;
                 }
@@ -115,10 +118,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                     if (myBuilder.getTokenType() == PyxlTokenTypes.STRING) {
                         myBuilder.advanceLexer();
-                    } else if (pyxlBeginTags.contains(myBuilder.getTokenType())) {
+                    } else if (PYXL_BEGIN_TAGS.contains(myBuilder.getTokenType())) {
                         // Another pyxl tag just got started.
                         parsePyxlTag();
-                    } else if (pyxlCloseTags.contains(myBuilder.getTokenType())) {
+                    } else if (PYXL_CLOSE_TAGS.contains(myBuilder.getTokenType())) {
                         // The tag got closed by </tag>.
                         consumeTokenAsPyxlTag();
                         pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
@@ -164,8 +167,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
 
-                    if (parsePyxlEmbed() ||
-                            myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
+                    if (parsePyxlEmbed() || myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
                         if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
                             myBuilder.advanceLexer();
                         }
