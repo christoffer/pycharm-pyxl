@@ -176,7 +176,7 @@ private IElementType handleRightBrace() {
         yybegin(popState());
         return PyxlTokenTypes.EMBED_END;
     } else {
-        return PyTokenTypes.RBRACE;
+        return PyTokenTypes.SPACE;
     }
 }
 
@@ -201,19 +201,19 @@ private IElementType handleRightBrace() {
 {TRIPLE_QUOTED_STRING} { return PyTokenTypes.TRIPLE_QUOTED_STRING; }
 "{"                     { embedBraceCount++; return PyTokenTypes.LBRACE; }
 "}"                   { return handleRightBrace(); }
-.                   { yypushback(1); yybegin(popState()); }
+//.                   { yypushback(1); return PyxlTokenTypes.BADCHAR; }
 }
 
 
 <IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
 
-"<if" { openTag(); return PyxlTokenTypes.IFTAGBEGIN; }
-"<else" { openTag(); return PyxlTokenTypes.ELSETAGBEGIN; }
 {PYXL_TAG}               { openTag(); yypushback(yylength()-1); return PyxlTokenTypes.TAGBEGIN; }
 
 }
 
 <IN_CLOSE_TAG> {
+"if" { return PyxlTokenTypes.IFTAG; }
+"else" { return PyxlTokenTypes.ELSETAG; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.TAGNAME; }
 ">"                   { yybegin(IN_PYXL_BLOCK); return closeTag() ? PyxlTokenTypes.TAGCLOSE_END : PyxlTokenTypes.BADCHAR; }
 .                     { return PyxlTokenTypes.BADCHAR; }
@@ -226,8 +226,6 @@ private IElementType handleRightBrace() {
     return PyTokenTypes.END_OF_LINE_COMMENT;
 }
 "{"                   { pushState(IN_PYXL_BLOCK); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-"</if>"             { return closeTag() ? PyxlTokenTypes.IFTAGCLOSE : PyxlTokenTypes.BADCHAR; }
-"</else>"             { return closeTag() ? PyxlTokenTypes.ELSETAGCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE_START; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
@@ -257,7 +255,7 @@ private IElementType handleRightBrace() {
 "\"" { yybegin(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
 
 // python embed without quotes -- should we really return here after this? Or is only a single value possible?
-"{"                 { pushState(IN_PYXL_TAG_NAME); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                 { pushState(IN_ATTR); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 ">"                 { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND;}
 "/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 
@@ -266,6 +264,8 @@ private IElementType handleRightBrace() {
 
 <IN_PYXL_TAG_NAME> { // parse a tag name
 //">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
+"if" { yybegin(IN_ATTR); return PyxlTokenTypes.IFTAG; }
+"else" { yybegin(IN_ATTR); return PyxlTokenTypes.ELSETAG; }
 
 {PYXL_ATTRNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
 //{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }

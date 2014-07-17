@@ -68,10 +68,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
     private static class PyxlExpressionParsing extends ExpressionParsing {
         private static final List<PyElementType> PYXL_BEGIN_TOKENS =
-                Arrays.asList(PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAGBEGIN);
+                Arrays.asList(PyxlTokenTypes.TAGBEGIN); // , PyxlTokenTypes.IFTAGBEGIN);
 
         private static final List<PyElementType> PYXL_CLOSE_TOKENS =
-                Arrays.asList(PyxlTokenTypes.TAGCLOSE, PyxlTokenTypes.IFTAGCLOSE);
+                Arrays.asList(PyxlTokenTypes.TAGCLOSE); // , PyxlTokenTypes.IFTAGCLOSE);
 
         public PyxlExpressionParsing(ParsingContext context) {
             super(context);
