@@ -164,7 +164,11 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
 
-                    if (parsePyxlEmbed()) {
+                    if (parsePyxlEmbed() ||
+                            myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
+                        if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
+                            myBuilder.advanceLexer();
+                        }
                         attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
                         parsePyxlAttributes();
                         return;
