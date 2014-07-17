@@ -11,31 +11,33 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class PyxlTagPyReference extends PyReferenceExpressionImpl {
+public class PyxlTagReference extends PyReferenceExpressionImpl {
+    private static final Set<String> EMPTY_HASH_SET = new HashSet<String>();
+
     private Set<String> mCachedSpecialPyxlTagNames = null;
 
-    public PyxlTagPyReference(ASTNode astNode) {
+    public PyxlTagReference(ASTNode astNode) {
         super(astNode);
     }
 
     @Nullable
     @Override
-    public String getName() {
-        return pyxlClassName(getText());
+    public String getReferencedName() {
+        return pyxlClassName(getNode().getText());
     }
 
     @Nullable
     @Override
     public PyExpression getQualifier() {
         PyExpression realQualifier = super.getQualifier();
-        if (realQualifier == null && isPyxlHtmlTag(getName())) {
+        if (realQualifier == null && isPyxlHtmlTag(getReferencedName())) {
             // Implicitly assume the tag is a reference to a pyxl html tag if the pyxl html module is imported and we
             // aren't using a qualifier already. This will break resolution of tags defined in a more local scope than
             // pyxl.html (e.g. if you make your own class x_div in a file that also imports pyxl.html).
             // This is consistent with how Pyxl works:
             // https://github.com/dropbox/pyxl/blob/daa01ca026ef3dba931d3ba56118ad8f8f6bec94/pyxl/codec/parser.py#L211
             PyImportElement pyxlHtmlImportElement = getImportedPyxlHtmlModuleElement();
-            if(pyxlHtmlImportElement != null) {
+            if (pyxlHtmlImportElement != null) {
                 return pyxlHtmlImportElement.getImportReferenceExpression();
             }
         }
@@ -59,7 +61,8 @@ public class PyxlTagPyReference extends PyReferenceExpressionImpl {
                 }
             }
         }
-        return mCachedSpecialPyxlTagNames;
+
+        return mCachedSpecialPyxlTagNames == null ? EMPTY_HASH_SET : mCachedSpecialPyxlTagNames;
     }
 
     private PyImportElement getImportedPyxlHtmlModuleElement() {
@@ -75,7 +78,7 @@ public class PyxlTagPyReference extends PyReferenceExpressionImpl {
                 PyImportElement[] importedElements = importStatement.getImportElements();
                 for (PyImportElement importedElement : importedElements) {
                     PsiElement htmlElement = importedElement.getElementNamed("html");
-                    if(htmlElement instanceof PyFile) {
+                    if (htmlElement instanceof PyFile) {
                         return importedElement;
                     }
                 }
@@ -91,13 +94,12 @@ public class PyxlTagPyReference extends PyReferenceExpressionImpl {
                 && qualifiedName.getLastComponent().equals(componentName);
     }
 
-    @Nullable
-    @Override
-    public String getReferencedName() {
-        return getName();
+    private String pyxlClassName(String tagName) {
+        return "x_" + tagName;
     }
 
-    private String pyxlClassName(String tagName) {
-        return tagName.replaceFirst("</?", "x_").replaceFirst(">$", "");
+    @Override
+    public String toString() {
+        return "PyxlTagReference: " + getReferencedName();
     }
 }

@@ -7,4 +7,9 @@ public class PyxlStatement extends PyStringLiteralExpressionImpl {
     public PyxlStatement(ASTNode astNode) {
         super(astNode);
     }
+
+    @Override
+    public String toString() {
+        return "Pyxl Statement: " + getStringValue();
+    }
 }

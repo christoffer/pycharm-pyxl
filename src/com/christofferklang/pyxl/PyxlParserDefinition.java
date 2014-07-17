@@ -155,7 +155,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             if (token == PyxlTokenTypes.TAGNAME) {
                 final PsiBuilder.Marker endTag = myBuilder.mark();
                 myBuilder.advanceLexer();
-                endTag.done(PyxlElementTypes.PYXL_TAG_PY_REFERENCE);
+                endTag.done(PyxlElementTypes.PYXL_TAG_REFERENCE);
             } else if (token == PyxlTokenTypes.IFTAG || token == PyxlTokenTypes.ELSETAG) {
                 myBuilder.advanceLexer();
             } else {

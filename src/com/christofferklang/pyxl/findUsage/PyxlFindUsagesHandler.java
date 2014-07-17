@@ -18,6 +18,6 @@ public class PyxlFindUsagesHandler extends PyClassFindUsagesHandler {
 
     @Override
     protected Collection<String> getStringsToSearch(PsiElement element) {
-        return Arrays.asList(mPyxlClass.getName(), "<div", "<span", "x_span");
+        return super.getStringsToSearch(element);
     }
 }

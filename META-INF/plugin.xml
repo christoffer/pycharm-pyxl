@@ -23,20 +23,17 @@
     -->
 
     <extensions defaultExtensionNs="com.intellij">
-        <lang.parserDefinition language="Python" order="first, before PythonParserDefinition" implementationClass="com.christofferklang.pyxl.PyxlParserDefinition" />
-        <lang.syntaxHighlighterFactory key="Python" order="first" implementationClass="com.christofferklang.pyxl.PyxlHighlighterFactory" />
-        <lang.findUsagesProvider
-            language="Python"
-            order="first"
-            implementationClass="com.christofferklang.pyxl.PyxlFindUsagesProvider"
-        />
-        <findUsagesHandlerFactory order="first" implementation="com.christofferklang.pyxl.PyxlFindUsagesHandlerFactory"/>
-        <lang.formatter
-            language="Python"
-            order="first"
-            implementationClass="com.christofferklang.pyxl.PyxlFormattingModelBuilder"
-        />
+        <lang.parserDefinition
+                language="Python"
+                order="first, before PythonParserDefinition"
+                implementationClass="com.christofferklang.pyxl.PyxlParserDefinition"
+                />
 
+        <lang.syntaxHighlighterFactory
+                key="Python"
+                order="first"
+                implementationClass="com.christofferklang.pyxl.PyxlHighlighterFactory"
+                />
     </extensions>
 
     <application-components>
@@ -50,8 +47,10 @@
     <depends>com.intellij.modules.python</depends>
 
     <actions>
-        <action id="PyxlTagDefinition" class="com.christofferklang.pyxl.action.PyxlTagDefinitionAction"
-                text="Goto Pyxl definition" description="Jumps to the Pyxl definition of the tag under the cursor">
+        <action id="PyxlTagDefinition"
+                class="com.christofferklang.pyxl.action.PyxlTagDefinitionAction"
+                text="Goto Pyxl definition"
+                description="Jumps to the Pyxl definition of the tag under the cursor">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <keyboard-shortcut first-keystroke="ctrl shift b" keymap="$default"/>
         </action>

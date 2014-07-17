@@ -1,6 +1,5 @@
 package com.christofferklang.pyxl;
 
-import com.christofferklang.pyxl.psi.PyxlTagBeginImpl;
 import com.jetbrains.python.psi.PyElementType;
 
 public class PyxlTokenTypes {
@@ -14,15 +13,15 @@ public class PyxlTokenTypes {
     public static final PyElementType ATTRVALUE_START = new PyElementType("PYXL ATTRVALUE BEGIN");
     public static final PyElementType ATTRVALUE_END = new PyElementType("PYXL ATTRVALUE END");
 
-    public static final PyElementType TAGBEGIN = new PyElementType("PYXL TAGBEGIN <", PyxlTagBeginImpl.class);
+    public static final PyElementType TAGBEGIN = new PyElementType("PYXL TAGBEGIN <");
     public static final PyElementType TAGNAME = new PyElementType("PYXL TAGNAME");
     public static final PyElementType TAGEND = new PyElementType("PYXL TAGEND >");
     public static final PyElementType TAGCLOSE = new PyElementType("PYXL TAGCLOSE </");
 
     public static final PyElementType TAGENDANDCLOSE = new PyElementType("PYXL TAGENDANDCLOSE />");
 
-    public static final PyElementType IFTAG = new PyElementType("PYXL IF tag", PyxlTagBeginImpl.class);
-    public static final PyElementType ELSETAG = new PyElementType("PYXL ELSE tag", PyxlTagBeginImpl.class);
+    public static final PyElementType IFTAG = new PyElementType("PYXL IF tag");
+    public static final PyElementType ELSETAG = new PyElementType("PYXL ELSE tag");
 
     public static final PyElementType EMBED_START = new PyElementType("PYXL PYTHON EMBED BEGIN {");
     public static final PyElementType EMBED_END = new PyElementType("PYXL PYTHON EMBED END }");
