@@ -23,8 +23,14 @@
     -->
 
     <extensions defaultExtensionNs="com.intellij">
-        <lang.parserDefinition language="Python" order="first" implementationClass="com.christofferklang.pyxl.PyxlParserDefinition" />
+        <lang.parserDefinition language="Python" order="first, before PythonParserDefinition" implementationClass="com.christofferklang.pyxl.PyxlParserDefinition" />
         <lang.syntaxHighlighterFactory key="Python" order="first" implementationClass="com.christofferklang.pyxl.PyxlHighlighterFactory" />
+        <lang.findUsagesProvider
+            language="Python"
+            order="first"
+            implementationClass="com.christofferklang.pyxl.PyxlFindUsagesProvider"
+        />
+        <findUsagesHandlerFactory order="first" implementation="com.christofferklang.pyxl.PyxlFindUsagesHandlerFactory"/>
     </extensions>
 
     <application-components>
