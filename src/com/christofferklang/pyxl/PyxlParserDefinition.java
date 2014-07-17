@@ -105,6 +105,11 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                 // Parse content.
                 while (!myBuilder.eof()) {
+                    // Parse embed expressions of the form {python_code}.
+                    if (!parsePyxlEmbed()) {
+                        break;
+                    }
+
                     if (myBuilder.getTokenType() == PyxlTokenTypes.STRING) {
                         myBuilder.advanceLexer();
                     } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGBEGIN) {
@@ -115,22 +120,28 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                         myBuilder.advanceLexer();
                         pyxl.done(PyElementTypes.CALL_EXPRESSION);
                         return;
-                    } else if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
-                        myBuilder.advanceLexer();
-                        super.parseExpression();
-                        if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_END) {
-                            myBuilder.advanceLexer();
-                        } else {
-                            break;  // error
-                        }
                     } else {
                         myBuilder.advanceLexer();
                     }
                 }
             }
 
-                myBuilder.error("pyxl expected");
+            myBuilder.error("pyxl expected");
             pyxl.done(PyElementTypes.CALL_EXPRESSION);
+        }
+
+        private boolean parsePyxlEmbed() {
+            if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
+                myBuilder.advanceLexer();
+                parseExpression();
+                if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_END) {
+                    myBuilder.advanceLexer();
+                } else {
+                    myBuilder.error("pyxl embed end expected");
+                    return false;
+                }
+            }
+            return true;
         }
 
         /**
@@ -143,10 +154,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 myBuilder.advanceLexer();
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
-                    if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
-                        myBuilder.advanceLexer();
 
-                        // Parse remaining attributes.
+                    if (parsePyxlEmbed()) {
                         attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
                         parsePyxlAttributes();
                         return;
@@ -155,7 +164,6 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                 myBuilder.error("pyxl attr expected");
                 attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
-
             }
         }
     }

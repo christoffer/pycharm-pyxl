@@ -184,11 +184,8 @@ private PyElementType handleRightBrace() {
 ">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
 "/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
-// Nils: For now, handle python embeds as attribute values.
-{PYXL_QUOTED_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
-{PYXL_PYTHON_EMBED} { return PyxlTokenTypes.ATTRVALUE; }
-//{PYXL_QUOTED_PYTHON_EMBED}              { embedBraceCount++; inpyxltag=true; yypushback(yylength()-2); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-//{PYXL_PYTHON_EMBED}               { embedBraceCount++; inpyxltag=true; yypushback(yylength()-1); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+{PYXL_QUOTED_PYTHON_EMBED}              { embedBraceCount++; inpyxltag=true; yypushback(yylength()-2); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+{PYXL_PYTHON_EMBED}               { embedBraceCount++; inpyxltag=true; yypushback(yylength()-1); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 {PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
 {PYXL_ATTRVALUE2} { return PyxlTokenTypes.ATTRVALUE; }
 "="                   { return PyTokenTypes.EQ; }
