@@ -176,7 +176,9 @@ public class PyxlParserDefinition extends PythonParserDefinition {
         private void parsePyxlAttributes() {
             while (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
                 final PsiBuilder.Marker attr = myBuilder.mark();
+                final PsiBuilder.Marker attrName = myBuilder.mark();
                 myBuilder.advanceLexer();
+                attrName.done(PyxlElementTypes.PYXL_ATTRNAME);
 
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
