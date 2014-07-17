@@ -97,7 +97,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 return;
             } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGEND) {
                 // The tag has content (even empty content counts).
-                consumeTokenAsPyxlTag();
+                myBuilder.advanceLexer();
 
                 // Parse content.
                 while (!myBuilder.eof()) {
