@@ -71,7 +71,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 Arrays.asList(PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAG);
 
         private static final List<PyElementType> PYXL_CLOSE_TOKENS =
-                Arrays.asList(PyxlTokenTypes.TAGCLOSE, PyxlTokenTypes.IFTAGCLOSE);
+                Arrays.asList(PyxlTokenTypes.TAGCLOSE); // , PyxlTokenTypes.IFTAGCLOSE);
 
         public PyxlExpressionParsing(ParsingContext context) {
             super(context);
