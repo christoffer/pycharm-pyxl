@@ -15,12 +15,14 @@ import com.jetbrains.python.parsing.ParsingContext;
 import com.jetbrains.python.parsing.PyParser;
 import com.jetbrains.python.parsing.StatementParsing;
 import com.jetbrains.python.psi.LanguageLevel;
+import com.jetbrains.python.psi.PyElementType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
 
 public class PyxlParserDefinition extends PythonParserDefinition {
-
     @NotNull
     @Override
     public Lexer createLexer(Project project) {
@@ -64,6 +66,11 @@ public class PyxlParserDefinition extends PythonParserDefinition {
     }
 
     private class PyxlExpressionParsing extends ExpressionParsing {
+        private List<PyElementType> pyxlBeginTags = Arrays.asList(
+                PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAGBEGIN);
+        private List<PyElementType> pyxlCloseTags = Arrays.asList(
+                PyxlTokenTypes.TAGCLOSE, PyxlTokenTypes.IFTAGCLOSE);
+
         public PyxlExpressionParsing(ParsingContext context) {
             super(context);
         }
@@ -72,7 +79,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             boolean match = super.parsePrimaryExpression(isTargetExpression);
             if (!match) {
                 final IElementType firstToken = myBuilder.getTokenType();
-                if (firstToken == PyxlTokenTypes.TAGBEGIN) {
+                if (pyxlBeginTags.contains(firstToken)) {
                     parsePyxlTag();
                     return true;
                 }
@@ -108,10 +115,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                     if (myBuilder.getTokenType() == PyxlTokenTypes.STRING) {
                         myBuilder.advanceLexer();
-                    } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGBEGIN) {
+                    } else if (pyxlBeginTags.contains(myBuilder.getTokenType())) {
                         // Another pyxl tag just got started.
                         parsePyxlTag();
-                    } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGCLOSE) {
+                    } else if (pyxlCloseTags.contains(myBuilder.getTokenType())) {
                         // The tag got closed by </tag>.
                         consumeTokenAsPyxlTag();
                         pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
