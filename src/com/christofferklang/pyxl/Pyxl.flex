@@ -169,12 +169,16 @@ private PyElementType handleRightBrace() {
 
 <IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
 
+"<if" { openTag(); return PyxlTokenTypes.IFTAGBEGIN; }
+"<else" { openTag(); return PyxlTokenTypes.ELSETAGBEGIN; }
 {PYXL_TAGBEGIN}               { openTag(); return PyxlTokenTypes.TAGBEGIN; }
 
 }
 
 <IN_PYXL_BLOCK> {
 "{"                   { embedBraceCount++; inpyxltag=false; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"</if>"             { return closeTag() ? PyxlTokenTypes.IFTAGCLOSE : PyxlTokenTypes.BADCHAR; }
+"</else>"             { return closeTag() ? PyxlTokenTypes.ELSETAGCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_TAGCLOSE}        { return closeTag() ? PyxlTokenTypes.TAGCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
