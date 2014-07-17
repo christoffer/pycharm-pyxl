@@ -193,7 +193,7 @@ private IElementType handleRightBrace() {
 <IN_PYXL_COMMENT> {
     "-->" { yybegin(commentStartState); return PyTokenTypes.END_OF_LINE_COMMENT; }
     [^\-]|(-[^\-])|(--[^>]) { return PyTokenTypes.END_OF_LINE_COMMENT; }
-    [^] { return PyTokenTypes.BAD_CHARACTER; }
+    [^] { return PyxlTokenTypes.BADCHAR; }
 }
 
 <IN_PYXL_PYTHON_EMBED> {
@@ -201,7 +201,7 @@ private IElementType handleRightBrace() {
 {TRIPLE_QUOTED_STRING} { return PyTokenTypes.TRIPLE_QUOTED_STRING; }
 "{"                     { embedBraceCount++; return PyTokenTypes.LBRACE; }
 "}"                   { return handleRightBrace(); }
-//.                   { yypushback(1); return PyxlTokenTypes.BADCHAR; }
+// remainder of python is defined below in the python states.
 }
 
 
@@ -227,6 +227,7 @@ private IElementType handleRightBrace() {
 }
 "{"                   { pushState(IN_PYXL_BLOCK); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 {PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE_START; }
+{END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
@@ -316,9 +317,6 @@ return PyTokenTypes.DOCSTRING; }
 }
 
 [\n]                        { return PyTokenTypes.LINE_BREAK; }
-{END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
-
-
 
 
 <YYINITIAL, IN_DOCSTRING_OWNER, IN_PYXL_PYTHON_EMBED> {
@@ -410,3 +408,6 @@ return PyTokenTypes.DOCSTRING; }
 
 .                     { return PyTokenTypes.BAD_CHARACTER; }
 }
+
+//[\n]                        { return PyTokenTypes.LINE_BREAK; }
+.                     { return PyxlTokenTypes.BADCHAR; }
