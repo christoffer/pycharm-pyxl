@@ -67,10 +67,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
     }
 
     private static class PyxlExpressionParsing extends ExpressionParsing {
-        private static final List<PyElementType> PYXL_BEGIN_TAGS =
+        private static final List<PyElementType> PYXL_BEGIN_TOKENS =
                 Arrays.asList(PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAGBEGIN);
 
-        private static final List<PyElementType> PYXL_CLOSE_TAGS =
+        private static final List<PyElementType> PYXL_CLOSE_TOKENS =
                 Arrays.asList(PyxlTokenTypes.TAGCLOSE, PyxlTokenTypes.IFTAGCLOSE);
 
         public PyxlExpressionParsing(ParsingContext context) {
@@ -82,7 +82,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             if (!match) {
                 final IElementType firstToken = myBuilder.getTokenType();
                 //noinspection SuspiciousMethodCalls
-                if (PYXL_BEGIN_TAGS.contains(firstToken)) {
+                if (PYXL_BEGIN_TOKENS.contains(firstToken)) {
                     parsePyxlTag();
                     return true;
                 }
@@ -118,10 +118,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                     if (myBuilder.getTokenType() == PyxlTokenTypes.STRING) {
                         myBuilder.advanceLexer();
-                    } else if (PYXL_BEGIN_TAGS.contains(myBuilder.getTokenType())) {
+                    } else if (PYXL_BEGIN_TOKENS.contains(myBuilder.getTokenType())) {
                         // Another pyxl tag just got started.
                         parsePyxlTag();
-                    } else if (PYXL_CLOSE_TAGS.contains(myBuilder.getTokenType())) {
+                    } else if (PYXL_CLOSE_TOKENS.contains(myBuilder.getTokenType())) {
                         // The tag got closed by </tag>.
                         consumeTokenAsPyxlTag();
                         pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
@@ -142,6 +142,13 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             endTag.done(PyxlElementTypes.PYXL_TAG_PY_REFERENCE);
         }
 
+        /**
+         * Attempt to parse a python expression embedded in {}. For example:
+         * {self.counter + 1}
+         * @return true if an embedded expression was parsed, or no embedded
+         * expression could be found, or false if an embedded expression was
+         * found but an error occurred while it was being parsed.
+         */
         private boolean parsePyxlEmbed() {
             if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
                 myBuilder.advanceLexer();
