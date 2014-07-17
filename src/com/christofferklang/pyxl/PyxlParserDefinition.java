@@ -157,8 +157,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
          * Parse as many attribute="value" pairs as possible.
          */
         private void parsePyxlAttributes() {
-            // Parse the current attribute="value" pair, if any.
-            if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
+            while (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
                 final PsiBuilder.Marker attr = myBuilder.mark();
                 myBuilder.advanceLexer();
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
@@ -167,11 +166,15 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                     if (parsePyxlEmbed() ||
                             myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
                         if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
+                            // We only need to advance the lexer for ATTRVALUE
+                            // because parsePyxlEmbed will do its own
+                            // advancing.
                             myBuilder.advanceLexer();
                         }
                         attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
-                        parsePyxlAttributes();
-                        return;
+
+                        // Parse the next attribute="value" pair.
+                        continue;
                     }
                 }
 
