@@ -6,7 +6,10 @@ import com.jetbrains.python.PyTokenTypes;
 import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.intellij.openapi.util.text.StringUtil;
 import java.util.Stack;
-import com.jetbrains.python.psi.PyElementType;
+import com.intellij.psi.tree.IElementType;
+
+
+// NOTE: JFlex lexer file is defined in http://www.jflex.de/manual.pdf
 
 %%
 
@@ -76,16 +79,23 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
 
 // NILS:
-PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]**
-PYXL_TAGBEGIN = "<" {IDENTIFIER}
+S = [\ \t]*
+PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
+PYXL_ATTR = {PYXL_ATTRNAME}{S}"="(PYXL_ATTRVALUE_2Q|PYXL_ATTRVALUE_1Q){S}
+PYXL_TAG = "<" {PYXL_ATTRNAME} // {S}{PYXL_ATTR}*(">"|"/>")
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
 // a string that doesn't contain a {} (e.g. no python embed)
 PYXL_STRING_INSIDES = ([^\\\"\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
+
+// attribute value, double-quoted without a python embed
+PYXL_ATTRVALUE_2Q = ([^\\\"\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
+PYXL_ATTRVALUE_1Q = ([^\\'\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
+
 // a quoted string without a python embed
-PYXL_ATTRVALUE1 = '{PYXL_STRING_INSIDES}'
-PYXL_ATTRVALUE2 = \"{PYXL_STRING_INSIDES}\"
+//PYXL_ATTRVALUE1 = '{PYXL_STRING_INSIDES}'
+//PYXL_ATTRVALUE2 = \"{PYXL_STRING_INSIDES}\"
 // a quoted string with a python embed
-PYXL_QUOTED_PYTHON_EMBED = [\"']{PYXL_PYTHON_EMBED}[\"']
+//PYXL_QUOTED_PYTHON_EMBED = [\"']{PYXL_PYTHON_EMBED}[\"']
 // a normal python embed (with no quotes)
 PYXL_PYTHON_EMBED = \{{PYXL_STRING_INSIDES}\}
 // a string in a pyxl block, outside tags and quotes (can't contain {}  <> # etc)
@@ -93,21 +103,37 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 
 %state IN_PYXL_BLOCK
 %state IN_PYXL_COMMENT
-%state IN_PYXL_TAG
+%state IN_PYXL_TAG_NAME
 %state IN_PYXL_PYTHON_EMBED
 
+%state ATTR_VALUE_1Q
+%state ATTR_VALUE_2Q
+%state IN_ATTR
+
 %{
+
+
+private void pushState(Integer state) {
+    stateStack.push(state);
+}
+
+private Integer popState() {
+    return stateStack.pop();
+}
+
 
 int commentStartState = YYINITIAL;
 int embedBraceCount = 0;
 
 boolean inpyxltag;
 
-
 Stack<String> tagStack = new Stack<String>();
+Stack<Integer> stateStack = new Stack<Integer>();
+
+
 private void openTag() {
     tagStack.push("Moo");
-    yybegin(IN_PYXL_TAG);
+    yybegin(IN_PYXL_TAG_NAME);
 }
 
 private boolean closeTag() {
@@ -142,9 +168,11 @@ return yylength()-s.length();
 
 }
 
-private PyElementType handleRightBrace() {
+// handle a right brace in a python embed
+private IElementType handleRightBrace() {
+
     if (--embedBraceCount == 0) {
-        yybegin(inpyxltag ? IN_PYXL_TAG : IN_PYXL_BLOCK);
+        yybegin(popState());
         return PyxlTokenTypes.EMBED_END;
     } else {
         return PyTokenTypes.RBRACE;
@@ -159,6 +187,8 @@ private PyElementType handleRightBrace() {
 [\f]                        { return PyTokenTypes.FORMFEED; }
 "\\"                        { return PyTokenTypes.BACKSLASH; }
 
+
+
 <IN_PYXL_COMMENT> {
     "-->" { yybegin(commentStartState); return PyTokenTypes.END_OF_LINE_COMMENT; }
     [^\-]|(-[^\-])|(--[^>]) { return PyTokenTypes.END_OF_LINE_COMMENT; }
@@ -170,8 +200,7 @@ private PyElementType handleRightBrace() {
 {TRIPLE_QUOTED_STRING} { return PyTokenTypes.TRIPLE_QUOTED_STRING; }
 "{"                     { embedBraceCount++; return PyTokenTypes.LBRACE; }
 "}"                   { return handleRightBrace(); }
-"}\""                   { return handleRightBrace(); }
-
+.                   { yypushback(1); yybegin(popState()); }
 }
 
 
@@ -179,7 +208,7 @@ private PyElementType handleRightBrace() {
 
 "<if" { openTag(); return PyxlTokenTypes.IFTAGBEGIN; }
 "<else" { openTag(); return PyxlTokenTypes.ELSETAGBEGIN; }
-{PYXL_TAGBEGIN}               { openTag(); return PyxlTokenTypes.TAGBEGIN; }
+{PYXL_TAG}               { openTag(); yypushback(yylength()-1); return PyxlTokenTypes.TAGBEGIN; }
 
 }
 
@@ -189,24 +218,50 @@ private PyElementType handleRightBrace() {
     yybegin(IN_PYXL_COMMENT);
     return PyTokenTypes.END_OF_LINE_COMMENT;
 }
-
-"{"                   { embedBraceCount++; inpyxltag=false; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                   { pushState(IN_PYXL_BLOCK); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 "</if>"             { return closeTag() ? PyxlTokenTypes.IFTAGCLOSE : PyxlTokenTypes.BADCHAR; }
 "</else>"             { return closeTag() ? PyxlTokenTypes.ELSETAGCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_TAGCLOSE}        { return closeTag() ? PyxlTokenTypes.TAGCLOSE : PyxlTokenTypes.BADCHAR; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
+
+
 }
 
-<IN_PYXL_TAG> {
-">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
-"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
+<ATTR_VALUE_1Q> {
+"'" { yybegin(IN_ATTR); return PyxlTokenTypes.ATTRVALUE_END; }  // end of attribute value
+{PYXL_ATTRVALUE_1Q} { return PyxlTokenTypes.ATTRVALUE;}
+"{"                   { pushState(ATTR_VALUE_1Q); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+. { return PyxlTokenTypes.BADCHAR;}
+}
+
+<ATTR_VALUE_2Q> {
+"\"" { yybegin(IN_ATTR); return PyxlTokenTypes.ATTRVALUE_END;}  // end of attribute value
+{PYXL_ATTRVALUE_2Q} { return PyxlTokenTypes.ATTRVALUE;}
+"{"                   { pushState(ATTR_VALUE_2Q);embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+[^] { return PyxlTokenTypes.BADCHAR;}
+
+}
+
+<IN_ATTR> { // parse an attribute name and value
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
-{PYXL_QUOTED_PYTHON_EMBED}              { embedBraceCount++; inpyxltag=true; yypushback(yylength()-2); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_PYTHON_EMBED}               { embedBraceCount++; inpyxltag=true; yypushback(yylength()-1); yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
-{PYXL_ATTRVALUE2} { return PyxlTokenTypes.ATTRVALUE; }
 "="                   { return PyTokenTypes.EQ; }
+"'" { yybegin(ATTR_VALUE_1Q); return PyxlTokenTypes.ATTRVALUE_START; }
+"\"" { yybegin(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
+
+// python embed without quotes -- should we really return here after this? Or is only a single value possible?
+"{"                 { pushState(IN_PYXL_TAG_NAME); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+
+. { yybegin(IN_PYXL_TAG_NAME); yypushback(1); }
+}
+
+<IN_PYXL_TAG_NAME> { // parse a tag name
+//">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
+//"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
+
+{PYXL_ATTRNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
+//{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
+//{PYXL_ATTRVALUE2} { return PyxlTokenTypes.ATTRVALUE; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
 }
@@ -221,8 +276,7 @@ private PyElementType handleRightBrace() {
 {TRIPLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
                                  else yybegin(YYINITIAL); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
 {DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); yybegin(YYINITIAL); return PyTokenTypes.DOCSTRING; }
-{DOCSTRING_LITERAL}[\ \t]*"\\"  {
- yypushback(getSpaceLength(yytext())); return PyTokenTypes.DOCSTRING; }
+{DOCSTRING_LITERAL}[\ \t]*"\\"  { yypushback(getSpaceLength(yytext())); return PyTokenTypes.DOCSTRING; }
 
 .                               { yypushback(1); yybegin(YYINITIAL); }
 }
