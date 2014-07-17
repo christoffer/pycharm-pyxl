@@ -1,11 +1,9 @@
 package com.christofferklang.pyxl;
 
-import com.intellij.lang.ASTNode;
 import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.PsiParser;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiElement;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.tree.TokenSet;
 import com.jetbrains.python.PyElementTypes;
@@ -87,9 +85,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
          */
         private void parsePyxlTag() {
             final PsiBuilder.Marker pyxl = myBuilder.mark();
-
-            // Consume tag beginning.
-            myBuilder.advanceLexer();
+            consumeTokenAsPyxlTag();
 
             // Consume attributes.
             parsePyxlAttributes();
@@ -97,11 +93,11 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             if (myBuilder.getTokenType() == PyxlTokenTypes.TAGENDANDCLOSE) {
                 // The tag was self-closed ( /> ).
                 myBuilder.advanceLexer();
-                pyxl.done(PyElementTypes.CALL_EXPRESSION);
+                pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
                 return;
             } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGEND) {
                 // The tag has content (even empty content counts).
-                myBuilder.advanceLexer();
+                consumeTokenAsPyxlTag();
 
                 // Parse content.
                 while (!myBuilder.eof()) {
@@ -117,8 +113,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                         parsePyxlTag();
                     } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGCLOSE) {
                         // The tag got closed by </tag>.
-                        myBuilder.advanceLexer();
-                        pyxl.done(PyElementTypes.CALL_EXPRESSION);
+                        consumeTokenAsPyxlTag();
+                        pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
                         return;
                     } else {
                         myBuilder.advanceLexer();
@@ -127,7 +123,13 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             }
 
             myBuilder.error("pyxl expected");
-            pyxl.done(PyElementTypes.CALL_EXPRESSION);
+            pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
+        }
+
+        private void consumeTokenAsPyxlTag() {
+            final PsiBuilder.Marker endTag = myBuilder.mark();
+            myBuilder.advanceLexer();
+            endTag.done(PyxlElementTypes.PYXL_TAG_PY_REFERENCE);
         }
 
         private boolean parsePyxlEmbed() {
