@@ -17,7 +17,10 @@ public class PyxlTokenTypes {
     public static final PyElementType TAGBEGIN = new PyElementType("PYXL TAG BEGIN", PyxlTagBeginImpl.class);
     public static final PyElementType TAGNAME = new PyElementType("PYXL TAG NAME");
     public static final PyElementType TAGEND = new PyElementType("PYXL TAG END");
+    public static final PyElementType TAGCLOSE_START = new PyElementType("PYXL TAG CLOSE START");
     public static final PyElementType TAGCLOSE = new PyElementType("PYXL TAG CLOSE");
+    public static final PyElementType TAGCLOSE_END = new PyElementType("PYXL TAG CLOSE END");
+
     public static final PyElementType TAGENDANDCLOSE = new PyElementType("PYXL TAG END AND CLOSE");
 
     public static final PyElementType IFTAGBEGIN = new PyElementType("PYXL IF TAG BEGIN", PyxlTagBeginImpl.class);

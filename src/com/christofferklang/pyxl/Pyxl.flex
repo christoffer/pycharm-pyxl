@@ -109,6 +109,7 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 %state ATTR_VALUE_1Q
 %state ATTR_VALUE_2Q
 %state IN_ATTR
+%state IN_CLOSE_TAG
 
 %{
 
@@ -212,6 +213,12 @@ private IElementType handleRightBrace() {
 
 }
 
+<IN_CLOSE_TAG> {
+{PYXL_ATTRNAME}       { return PyxlTokenTypes.TAGNAME; }
+">"                   { yybegin(IN_PYXL_BLOCK); return closeTag() ? PyxlTokenTypes.TAGCLOSE_END : PyxlTokenTypes.BADCHAR; }
+.                     { return PyxlTokenTypes.BADCHAR; }
+}
+
 <IN_PYXL_BLOCK> {
 "<!--" {
     commentStartState = yystate(); // Remember which state we should return to after the comment
@@ -221,7 +228,7 @@ private IElementType handleRightBrace() {
 "{"                   { pushState(IN_PYXL_BLOCK); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 "</if>"             { return closeTag() ? PyxlTokenTypes.IFTAGCLOSE : PyxlTokenTypes.BADCHAR; }
 "</else>"             { return closeTag() ? PyxlTokenTypes.ELSETAGCLOSE : PyxlTokenTypes.BADCHAR; }
-{PYXL_TAGCLOSE}        { return closeTag() ? PyxlTokenTypes.TAGCLOSE : PyxlTokenTypes.BADCHAR; }
+{PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE_START; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
@@ -251,13 +258,14 @@ private IElementType handleRightBrace() {
 
 // python embed without quotes -- should we really return here after this? Or is only a single value possible?
 "{"                 { pushState(IN_PYXL_TAG_NAME); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+">"                 { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND;}
+"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 
-. { yybegin(IN_PYXL_TAG_NAME); yypushback(1); }
+. { return PyxlTokenTypes.BADCHAR; }
 }
 
 <IN_PYXL_TAG_NAME> { // parse a tag name
 //">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
-//"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 
 {PYXL_ATTRNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
 //{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
