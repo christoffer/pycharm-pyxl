@@ -68,10 +68,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
     private static class PyxlExpressionParsing extends ExpressionParsing {
         private static final List<PyElementType> PYXL_BEGIN_TOKENS =
-                Arrays.asList(PyxlTokenTypes.TAGBEGIN); // , PyxlTokenTypes.IFTAGBEGIN);
+                Arrays.asList(PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAG);
 
         private static final List<PyElementType> PYXL_CLOSE_TOKENS =
-                Arrays.asList(PyxlTokenTypes.TAGCLOSE); // , PyxlTokenTypes.IFTAGCLOSE);
+                Arrays.asList(PyxlTokenTypes.TAGCLOSE, PyxlTokenTypes.IFTAGCLOSE);
 
         public PyxlExpressionParsing(ParsingContext context) {
             super(context);
@@ -80,9 +80,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
         public boolean parsePrimaryExpression(boolean isTargetExpression) {
             boolean match = super.parsePrimaryExpression(isTargetExpression);
             if (!match) {
-                final IElementType firstToken = myBuilder.getTokenType();
                 //noinspection SuspiciousMethodCalls
-                if (PYXL_BEGIN_TOKENS.contains(firstToken)) {
+                if (PYXL_BEGIN_TOKENS.contains(myBuilder.getTokenType())) {
                     parsePyxlTag();
                     return true;
                 }
@@ -95,7 +94,14 @@ public class PyxlParserDefinition extends PythonParserDefinition {
          */
         private void parsePyxlTag() {
             final PsiBuilder.Marker pyxl = myBuilder.mark();
-            consumeTokenAsPyxlTag();
+
+            // Consume either < or <if>
+            myBuilder.advanceLexer();
+
+            // Consume the tag_name in <tag_name
+            if (myBuilder.getTokenType() == PyxlTokenTypes.TAGNAME) {
+                consumeTokenAsPyxlTag();
+            }
 
             // Consume attributes.
             parsePyxlAttributes();
@@ -112,7 +118,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 // Parse content.
                 while (!myBuilder.eof()) {
                     // Parse embed expressions of the form {python_code}.
-                    if (!parsePyxlEmbed()) {
+                    if (parsePyxlEmbed() == null) {
                         break;
                     }
 
@@ -149,18 +155,19 @@ public class PyxlParserDefinition extends PythonParserDefinition {
          * expression could be found, or false if an embedded expression was
          * found but an error occurred while it was being parsed.
          */
-        private boolean parsePyxlEmbed() {
+        private Integer parsePyxlEmbed() {
             if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
                 myBuilder.advanceLexer();
                 parseExpression();
                 if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_END) {
                     myBuilder.advanceLexer();
+                    return 1;
                 } else {
-                    myBuilder.error("pyxl embed end expected");
-                    return false;
+                    myBuilder.error("pyxl expected embed end");
+                    return null;
                 }
             }
-            return true;
+            return 0;
         }
 
         /**
@@ -170,26 +177,70 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             while (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
                 final PsiBuilder.Marker attr = myBuilder.mark();
                 myBuilder.advanceLexer();
+
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
-
-                    if (parsePyxlEmbed() || myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
-                        if (myBuilder.getTokenType() == PyxlTokenTypes.ATTRVALUE) {
-                            // We only need to advance the lexer for ATTRVALUE
-                            // because parsePyxlEmbed will do its own
-                            // advancing.
-                            myBuilder.advanceLexer();
-                        }
+                    if (parsePyxlAttributeValue()) {
                         attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
 
                         // Parse the next attribute="value" pair.
                         continue;
                     }
+                } else {
+                    myBuilder.error("pyxl expected =");
                 }
 
-                myBuilder.error("pyxl attr expected");
                 attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
             }
+        }
+
+        private boolean parsePyxlAttributeValue() {
+            IElementType token = myBuilder.getTokenType();
+
+            // Consume the start of an attribute.
+            boolean expectAttributeEnd = false;
+            if (token == PyxlTokenTypes.ATTRVALUE_START) {
+                myBuilder.advanceLexer();
+                expectAttributeEnd = true;
+            }
+
+            boolean foundValue = false;
+            while (true) {
+                token = myBuilder.getTokenType();
+
+                // Attempt to parse an embed expression.
+                Integer parsedEmbed = parsePyxlEmbed();
+                if (parsedEmbed == null) {
+                    // An error occurred parsing the embed expression.
+                    break;
+                } else if (parsedEmbed == 1) {
+                    foundValue = true;
+                    continue;
+                }
+
+                // Or consume literal attribute values.
+                if (token == PyxlTokenTypes.ATTRVALUE) {
+                    foundValue = true;
+                    myBuilder.advanceLexer();
+                    continue;
+                }
+
+                if (expectAttributeEnd) {
+                    if (token == PyxlTokenTypes.ATTRVALUE_END) {
+                        myBuilder.advanceLexer();
+                        return true;
+                    } else {
+                        myBuilder.error("pyxl expected attribute value");
+                        return false;
+                    }
+                } else if (foundValue) {
+                    return true;
+                } else {
+                    myBuilder.error("pyxl expected attribute value");
+                    return false;
+                }
+            }
+            return false;
         }
     }
 }
