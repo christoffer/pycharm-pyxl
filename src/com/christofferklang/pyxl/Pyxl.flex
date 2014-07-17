@@ -79,15 +79,20 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
 
 // NILS:
-S = [\ \t]*
+S = [\ \t\n]*
 PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
-PYXL_ATTR = {PYXL_ATTRNAME}{S}"="(PYXL_ATTRVALUE_2Q|PYXL_ATTRVALUE_1Q){S}
-PYXL_TAG = "<" {PYXL_ATTRNAME} // {S}{PYXL_ATTR}*(">"|"/>")
+PYXL_ATTR = {PYXL_ATTRNAME}{S}"="({PYXL_ATTRVALUE}){S}
+PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(>|\/>)
+//PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(">"|"/>")
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
 // a string that doesn't contain a {} (e.g. no python embed)
 PYXL_STRING_INSIDES = ([^\\\"\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 
-// attribute value, double-quoted without a python embed
+// approximate matches (slightly optimistic - can match on some syntax errors) used for looking for tag.
+PYXL_ATTRVALUE_LITERAL = (\"|')({PYXL_ATTRVALUE_2Q}|{PYXL_ATTRVALUE_1Q}|{PYXL_PYTHON_EMBED}?)+(\"|')
+PYXL_ATTRVALUE = ({PYXL_ATTRVALUE_LITERAL}|(\{.*\}))
+
+// attribute value insides (different for single-quoted and double-quoted strings)
 PYXL_ATTRVALUE_2Q = ([^\\\"\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 PYXL_ATTRVALUE_1Q = ([^\\'\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 
@@ -97,7 +102,7 @@ PYXL_ATTRVALUE_1Q = ([^\\'\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 // a quoted string with a python embed
 //PYXL_QUOTED_PYTHON_EMBED = [\"']{PYXL_PYTHON_EMBED}[\"']
 // a normal python embed (with no quotes)
-PYXL_PYTHON_EMBED = \{{PYXL_STRING_INSIDES}\}
+PYXL_PYTHON_EMBED = \{([^\\\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?\}
 // a string in a pyxl block, outside tags and quotes (can't contain {}  <> # etc)
 PYXL_BLOCK_STRING = ([^<{#])*?
 
@@ -125,8 +130,6 @@ private Integer popState() {
 
 int commentStartState = YYINITIAL;
 int embedBraceCount = 0;
-
-boolean inpyxltag;
 
 Stack<String> tagStack = new Stack<String>();
 Stack<Integer> stateStack = new Stack<Integer>();
@@ -188,8 +191,6 @@ private IElementType handleRightBrace() {
 [\f]                        { return PyTokenTypes.FORMFEED; }
 "\\"                        { return PyTokenTypes.BACKSLASH; }
 
-
-
 <IN_PYXL_COMMENT> {
     "-->" { yybegin(commentStartState); return PyTokenTypes.END_OF_LINE_COMMENT; }
     [^\-]|(-[^\-])|(--[^>]) { return PyTokenTypes.END_OF_LINE_COMMENT; }
@@ -215,7 +216,7 @@ private IElementType handleRightBrace() {
 "if" { return PyxlTokenTypes.IFTAG; }
 "else" { return PyxlTokenTypes.ELSETAG; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.TAGNAME; }
-">"                   { yybegin(IN_PYXL_BLOCK); return closeTag() ? PyxlTokenTypes.TAGCLOSE_END : PyxlTokenTypes.BADCHAR; }
+">"                   { yybegin(IN_PYXL_BLOCK); return closeTag() ? PyxlTokenTypes.TAGEND : PyxlTokenTypes.BADCHAR; }
 .                     { return PyxlTokenTypes.BADCHAR; }
 }
 
@@ -226,7 +227,7 @@ private IElementType handleRightBrace() {
     return PyTokenTypes.END_OF_LINE_COMMENT;
 }
 "{"                   { pushState(IN_PYXL_BLOCK); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE_START; }
+{PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
