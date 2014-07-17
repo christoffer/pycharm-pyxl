@@ -176,7 +176,7 @@ private IElementType handleRightBrace() {
         yybegin(popState());
         return PyxlTokenTypes.EMBED_END;
     } else {
-        return PyTokenTypes.SPACE;
+        return PyTokenTypes.RBRACE;
     }
 }
 
