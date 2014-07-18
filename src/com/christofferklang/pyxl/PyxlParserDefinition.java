@@ -114,12 +114,14 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 // Parse pyxl tag content.
                 while ((token = myBuilder.getTokenType()) != PyxlTokenTypes.TAGCLOSE) {
                     // Parse embed expressions of the form {python_code}.
-                    if (parsePyxlEmbed() == null) {
+                    Integer parsedEmbed = parsePyxlEmbed();
+                    if (parsedEmbed == null) {
                         pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
                         return;
+                    } else if (parsedEmbed == 1) {
+                        continue;
                     }
 
-                    token = myBuilder.getTokenType();
                     if (token == PyxlTokenTypes.TAGBEGIN) {
                         parsePyxlTag();
                     } else if (token == PyxlTokenTypes.STRING) {
