@@ -99,7 +99,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
             if (!parsePyxlTagName()) {
                 myBuilder.error("pyxl expected starting tag");
-                pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
+                pyxl.done(PyxlElementTypes.STATEMENT);
                 return;
             }
 
@@ -108,12 +108,17 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
             if (token == PyxlTokenTypes.TAGENDANDCLOSE) {
                 // The tag was self-closed ( /> ).
+                final PsiBuilder.Marker argumentList = myBuilder.mark();
+                argumentList.done(PyxlElementTypes.ARGUMENT_LIST);
                 myBuilder.advanceLexer();
             } else if (token == PyxlTokenTypes.TAGEND) {
                 // The tag has content (even empty content counts).
                 myBuilder.advanceLexer();
 
+                final PsiBuilder.Marker argumentList = myBuilder.mark();
+
                 // Parse pyxl tag content.
+                boolean error = false;
                 while ((token = myBuilder.getTokenType()) != PyxlTokenTypes.TAGCLOSE) {
                     // Parse embed expressions of the form {python_code}.
                     try {
@@ -121,8 +126,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                             continue;
                         }
                     } catch (PyxlParsingException e) {
-                        pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
-                        return;
+                        error = true;
+                        break;
                     }
 
                     if (token == PyxlTokenTypes.TAGBEGIN) {
@@ -131,9 +136,16 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                         myBuilder.advanceLexer();
                     } else {
                         myBuilder.error(String.format("pyxl encountered unexpected token: %s", token));
-                        pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
-                        return;
+                        error = true;
+                        break;
                     }
+                }
+
+                argumentList.done(PyElementTypes.ARGUMENT_LIST);
+
+                if (error) {
+                    pyxl.done(PyxlElementTypes.STATEMENT);
+                    return;
                 }
 
                 // Consume the </ token.
@@ -141,7 +153,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                 if (!parsePyxlTagName()) {
                     myBuilder.error("pyxl expected closing tag");
-                    pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
+                    pyxl.done(PyxlElementTypes.STATEMENT);
                     return;
                 }
 
@@ -151,7 +163,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                     myBuilder.error("pyxl expected >");
                 }
             }
-            pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
+            pyxl.done(PyxlElementTypes.STATEMENT);
         }
 
         /**
@@ -164,7 +176,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             if (token == PyxlTokenTypes.TAGNAME) {
                 final PsiBuilder.Marker tag = myBuilder.mark();
                 myBuilder.advanceLexer();
-                tag.done(PyxlElementTypes.PYXL_TAG_REFERENCE);
+                tag.done(PyxlElementTypes.TAG_REFERENCE);
             } else if (token == PyxlTokenTypes.IFTAG || token == PyxlTokenTypes.ELSETAG) {
                 myBuilder.advanceLexer();
             } else {
@@ -207,7 +219,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 final PsiBuilder.Marker attr = myBuilder.mark();
                 final PsiBuilder.Marker attrName = myBuilder.mark();
                 myBuilder.advanceLexer();
-                attrName.done(PyxlElementTypes.PYXL_ATTRNAME);
+                attrName.done(PyxlElementTypes.ATTRNAME);
 
                 if (myBuilder.getTokenType() == PyTokenTypes.EQ) {
                     myBuilder.advanceLexer();
