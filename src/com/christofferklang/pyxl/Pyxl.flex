@@ -82,11 +82,8 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 S = [\ \t\n]*
 PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
 PYXL_ATTR = {S}{PYXL_ATTRNAME}{S}"="{S}{PYXL_ATTRVALUE}{S}
-PYXL_TAG = "<" {PYXL_ATTRNAME}
-//PYXL_TAG = "<" {ATTRNAME}{S}{PYXL_ATTR}*(">"|"/>")
+PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(">"|"/>")
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
-// a string that doesn't contain a {} (e.g. no python embed)
-PYXL_STRING_INSIDES = ([^\\\"\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 
 // approximate matches (slightly optimistic - can match on some syntax errors) used for looking for tag.
 PYXL_ATTRVALUE_LITERAL = (\"|')({PYXL_ATTRVALUE_2Q}|{PYXL_ATTRVALUE_1Q}|{PYXL_PYTHON_EMBED}?)+(\"|')
