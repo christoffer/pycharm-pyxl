@@ -31,6 +31,12 @@
             implementationClass="com.christofferklang.pyxl.PyxlFindUsagesProvider"
         />
         <findUsagesHandlerFactory order="first" implementation="com.christofferklang.pyxl.PyxlFindUsagesHandlerFactory"/>
+        <lang.formatter
+            language="Python"
+            order="first"
+            implementationClass="com.christofferklang.pyxl.PyxlFormattingModelBuilder"
+        />
+
     </extensions>
 
     <application-components>
