@@ -12,7 +12,7 @@ import com.intellij.psi.tree.IElementType;
 // NOTE: JFlex lexer file is defined in http://www.jflex.de/manual.pdf
 
 %%
-
+// %debug uncomment for verbose output from the lexer
 %class PyxlLexer
 %implements FlexLexer
 %unicode
@@ -36,7 +36,7 @@ INTEGER = {DECIMALINTEGER}|{OCTINTEGER}|{HEXINTEGER}|{BININTEGER}
 LONGINTEGER = {INTEGER}[Ll]
 
 END_OF_LINE_COMMENT="#"[^\r\n]*
-
+PYXL_ENCODING_STRING = "#"{S}"coding:"{S}[^\n\r]*
 IDENT_START = [a-zA-Z_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:]|[:unicode_titlecase_letter:]|[:unicode_modifier_letter:]|[:unicode_other_letter:]|[:unicode_letter_number:]
 IDENT_CONTINUE = [a-zA-Z0-9_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:]|[:unicode_titlecase_letter:]|[:unicode_modifier_letter:]|[:unicode_other_letter:]|[:unicode_letter_number:]|[:unicode_non_spacing_mark:]|[:unicode_combining_spacing_mark:]|[:unicode_decimal_digit_number:]|[:unicode_connector_punctuation:]
 IDENTIFIER = {IDENT_START}{IDENT_CONTINUE}**
@@ -81,8 +81,8 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 // NILS:
 S = [\ \t\n]*
 PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
-PYXL_ATTR = {PYXL_ATTRNAME}{S}"="{S}{PYXL_ATTRVALUE}{S}
-PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(>|\/>)
+PYXL_ATTR = {S}{PYXL_ATTRNAME}{S}"="{S}{PYXL_ATTRVALUE}{S}
+PYXL_TAG = "<" {PYXL_ATTRNAME}
 //PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(">"|"/>")
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
 // a string that doesn't contain a {} (e.g. no python embed)
@@ -106,6 +106,7 @@ PYXL_PYTHON_EMBED = \{([^\\\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?\}
 // a string in a pyxl block, outside tags and quotes (can't contain {}  <> # etc)
 PYXL_BLOCK_STRING = ([^<{#])*?
 
+%state IN_PYXL_DOCUMENT
 %state IN_PYXL_BLOCK
 %state IN_PYXL_COMMENT
 %state IN_PYXL_TAG_NAME
@@ -127,8 +128,15 @@ private Integer popState() {
     return stateStack.pop();
 }
 
+// The document can be in either "pyxl" or "normal" state, which translates to the parser states
+// IN_PYXL_DOCUMENT and YYINITIAL resp.
+private int documentRootState = YYINITIAL;
 
+// The state the document was in as we enter a pyxl comment. We don't need a stack here since
+// comments can't be nested.
 int commentStartState = YYINITIAL;
+
+// Counter for keeping track of when an embed statment ends, as opposed to when inner braces closes.
 int embedBraceCount = 0;
 
 Stack<String> tagStack = new Stack<String>();
@@ -144,10 +152,10 @@ private boolean closeTag() {
     int size = tagStack.size();
     if (size == 1) {
         tagStack.pop();
-        yybegin(IN_DOCSTRING_OWNER);    // done with pyxl code.
+        yybegin(documentRootState);    // done with pyxl code.
         return true;
     } else if (size == 0) {
-        yybegin(IN_DOCSTRING_OWNER);    // done with pyxl code.
+        yybegin(documentRootState);    // done with pyxl code.
         return false;   // error
     } else {
         tagStack.pop();
@@ -161,7 +169,6 @@ private boolean closeTag() {
 %state PENDING_DOCSTRING
 %state IN_DOCSTRING_OWNER
 %{
-
 
 private int getSpaceLength(CharSequence string) {
 String string1 = string.toString();
@@ -206,10 +213,12 @@ private IElementType handleRightBrace() {
 }
 
 
-<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, YYINITIAL> {
-
-{PYXL_TAG}               { openTag(); yypushback(yylength()-1); return PyxlTokenTypes.TAGBEGIN; }
-
+<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, IN_PYXL_DOCUMENT> {
+    {PYXL_TAG} {
+        openTag();
+        yypushback(yylength()-1);
+        return PyxlTokenTypes.TAGBEGIN;
+    }
 }
 
 <IN_CLOSE_TAG> {
@@ -259,8 +268,8 @@ private IElementType handleRightBrace() {
 // python embed without quotes -- should we really return here after this? Or is only a single value possible?
 "{"                 { pushState(IN_ATTR); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 ">"                 { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND;}
-"/>"                    { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
-
+"/>"                { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
+{END_OF_LINE_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
 . { return PyxlTokenTypes.BADCHAR; }
 }
 
@@ -282,17 +291,28 @@ private IElementType handleRightBrace() {
 
 <PENDING_DOCSTRING> {
 {SINGLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
-                                 else yybegin(YYINITIAL); return PyTokenTypes.SINGLE_QUOTED_STRING; }
+                                 else yybegin(documentRootState); return PyTokenTypes.SINGLE_QUOTED_STRING; }
 {TRIPLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
-                                 else yybegin(YYINITIAL); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
-{DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); yybegin(YYINITIAL); return PyTokenTypes.DOCSTRING; }
+                                 else yybegin(documentRootState); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
+{DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); yybegin(documentRootState); return PyTokenTypes.DOCSTRING; }
 {DOCSTRING_LITERAL}[\ \t]*"\\"  { yypushback(getSpaceLength(yytext())); return PyTokenTypes.DOCSTRING; }
 
-.                               { yypushback(1); yybegin(YYINITIAL); }
+.                               { yypushback(1); yybegin(documentRootState); }
 }
 
-
+// NOTE(christoffer): Must be above YYINITIAL:{END_OF_LINE_COMMENT} as the length is identical, and
+// this must match before.
 <YYINITIAL> {
+    {PYXL_ENCODING_STRING} {
+        if(zzCurrentPos == 0) {
+            documentRootState = IN_PYXL_DOCUMENT;
+            yybegin(IN_PYXL_DOCUMENT);
+            return PyTokenTypes.END_OF_LINE_COMMENT;
+        }
+    }
+}
+
+<YYINITIAL, IN_PYXL_DOCUMENT> {
 [\n]                        { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyTokenTypes.LINE_BREAK; }
 {END_OF_LINE_COMMENT}       { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyTokenTypes.END_OF_LINE_COMMENT; }
 
@@ -318,12 +338,12 @@ return PyTokenTypes.DOCSTRING; }
 }
 
 [\n]                        { return PyTokenTypes.LINE_BREAK; }
-<YYINITIAL, IN_DOCSTRING_OWNER, PENDING_DOCSTRING> {
+<YYINITIAL, IN_DOCSTRING_OWNER, PENDING_DOCSTRING, IN_PYXL_DOCUMENT> {
 // this is a rule that used to be for ALL states in python; with Pyxl addition we have to limit it to  python states only.
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 }
 
-<YYINITIAL, IN_DOCSTRING_OWNER, IN_PYXL_PYTHON_EMBED> {
+<YYINITIAL, IN_DOCSTRING_OWNER, IN_PYXL_PYTHON_EMBED, IN_PYXL_DOCUMENT> {
 {LONGINTEGER}         { return PyTokenTypes.INTEGER_LITERAL; }
 {INTEGER}             { return PyTokenTypes.INTEGER_LITERAL; }
 {FLOATNUMBER}         { return PyTokenTypes.FLOAT_LITERAL; }
