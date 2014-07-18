@@ -81,7 +81,7 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 // NILS:
 S = [\ \t\n]*
 PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
-PYXL_ATTR = {PYXL_ATTRNAME}{S}"="({PYXL_ATTRVALUE}){S}
+PYXL_ATTR = {PYXL_ATTRNAME}{S}"="{S}{PYXL_ATTRVALUE}{S}
 PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(>|\/>)
 //PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(">"|"/>")
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
