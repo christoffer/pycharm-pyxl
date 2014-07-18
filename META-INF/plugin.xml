@@ -34,6 +34,9 @@
                 order="first"
                 implementationClass="com.christofferklang.pyxl.PyxlHighlighterFactory"
                 />
+
+        <colorSettingsPage
+                implementation="com.christofferklang.pyxl.PyxlColorSettingsPage" />
     </extensions>
 
     <application-components>
