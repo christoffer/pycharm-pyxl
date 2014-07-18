@@ -67,6 +67,8 @@ public class PyxlParserDefinition extends PythonParserDefinition {
     }
 
     private static class PyxlExpressionParsing extends ExpressionParsing {
+        private static class PyxlParsingException extends Throwable {}
+
         private static final List<PyElementType> PYXL_CLOSE_TOKENS =
                 Arrays.asList(PyxlTokenTypes.TAGCLOSE); // , PyxlTokenTypes.IFTAGCLOSE);
 
@@ -87,7 +89,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
         }
 
         /**
-         * Parse the current pyxl tag.
+         * Parse a pyxl tag.
          */
         private void parsePyxlTag() {
             final PsiBuilder.Marker pyxl = myBuilder.mark();
@@ -114,12 +116,13 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 // Parse pyxl tag content.
                 while ((token = myBuilder.getTokenType()) != PyxlTokenTypes.TAGCLOSE) {
                     // Parse embed expressions of the form {python_code}.
-                    Integer parsedEmbed = parsePyxlEmbed();
-                    if (parsedEmbed == null) {
+                    try {
+                        if (parsePyxlEmbed()) {
+                            continue;
+                        }
+                    } catch (PyxlParsingException e) {
                         pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
                         return;
-                    } else if (parsedEmbed == 1) {
-                        continue;
                     }
 
                     if (token == PyxlTokenTypes.TAGBEGIN) {
@@ -151,13 +154,17 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
         }
 
+        /**
+         * Parse the name of a pyxl tag, an if tag, or an else tag.
+         * @return true if a tag name was parsed, or false otherwise.
+         */
         private boolean parsePyxlTagName() {
             final IElementType token = myBuilder.getTokenType();
 
             if (token == PyxlTokenTypes.TAGNAME) {
-                final PsiBuilder.Marker endTag = myBuilder.mark();
+                final PsiBuilder.Marker tag = myBuilder.mark();
                 myBuilder.advanceLexer();
-                endTag.done(PyxlElementTypes.PYXL_TAG_REFERENCE);
+                tag.done(PyxlElementTypes.PYXL_TAG_REFERENCE);
             } else if (token == PyxlTokenTypes.IFTAG || token == PyxlTokenTypes.ELSETAG) {
                 myBuilder.advanceLexer();
             } else {
@@ -167,29 +174,33 @@ public class PyxlParserDefinition extends PythonParserDefinition {
         }
 
         /**
-         * Attempt to parse a python expression embedded in {}. For example:
-         * {self.counter + 1}
-         * @return true if an embedded expression was parsed, or no embedded
-         * expression could be found, or false if an embedded expression was
-         * found but an error occurred while it was being parsed.
+         * Attempt to parse an embedded python expression. For example:
+         * {self.counter + 1}. If an error occurs while the embedded expression
+         * is being parsed a parse error will be set. It is ok to call this
+         * method whenever a embedded python expression could occur, even if
+         * the lexer isn't currently ready to produce one.
+         * @return true if an embedded expression was parsed, or false
+         * otherwise.
+         * @throws PyxlParsingException if an error occurs while the embedded
+         * expression is being parsed.
          */
-        private Integer parsePyxlEmbed() {
+        private boolean parsePyxlEmbed() throws PyxlParsingException {
             if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
                 myBuilder.advanceLexer();
                 parseExpression();
                 if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_END) {
                     myBuilder.advanceLexer();
-                    return 1;
+                    return true;
                 } else {
                     myBuilder.error("pyxl expected embed end");
-                    return null;
+                    throw new PyxlParsingException();
                 }
             }
-            return 0;
+            return false;
         }
 
         /**
-         * Parse as many attribute="value" pairs as possible.
+         * Parse all pyxl tag attribute="value" pairs.
          */
         private void parsePyxlAttributes() {
             while (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
@@ -214,14 +225,20 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             }
         }
 
+        /**
+         * Parse a pyxl attribute value. If an error occurs while the attribute
+         * value is being parsed a parse error will be set.
+         * @return true if a value was successfully parsed and false
+         * otherwise.
+         */
         private boolean parsePyxlAttributeValue() {
             IElementType token = myBuilder.getTokenType();
 
             // Consume the start of an attribute.
-            boolean expectAttributeEnd = false;
+            IElementType startToken = null;
             if (token == PyxlTokenTypes.ATTRVALUE_START) {
                 myBuilder.advanceLexer();
-                expectAttributeEnd = true;
+                startToken = token;
             }
 
             boolean foundValue = false;
@@ -229,13 +246,13 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 token = myBuilder.getTokenType();
 
                 // Attempt to parse an embed expression.
-                Integer parsedEmbed = parsePyxlEmbed();
-                if (parsedEmbed == null) {
-                    // An error occurred parsing the embed expression.
+                try {
+                    if (parsePyxlEmbed()) {
+                        foundValue = true;
+                        continue;
+                    }
+                } catch (PyxlParsingException e) {
                     break;
-                } else if (parsedEmbed == 1) {
-                    foundValue = true;
-                    continue;
                 }
 
                 // Or consume literal attribute values.
@@ -245,12 +262,12 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                     continue;
                 }
 
-                if (expectAttributeEnd) {
+                if (startToken != null) {
                     if (token == PyxlTokenTypes.ATTRVALUE_END) {
                         myBuilder.advanceLexer();
                         return true;
                     } else {
-                        myBuilder.error("pyxl expected attribute value");
+                        myBuilder.error("pyxl expected " + startToken);
                         return false;
                     }
                 } else if (foundValue) {
