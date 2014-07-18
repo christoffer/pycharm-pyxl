@@ -318,7 +318,10 @@ return PyTokenTypes.DOCSTRING; }
 }
 
 [\n]                        { return PyTokenTypes.LINE_BREAK; }
-
+<YYINITIAL, IN_DOCSTRING_OWNER, PENDING_DOCSTRING> {
+// this is a rule that used to be for ALL states in python; with Pyxl addition we have to limit it to  python states only.
+{END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
+}
 
 <YYINITIAL, IN_DOCSTRING_OWNER, IN_PYXL_PYTHON_EMBED> {
 {LONGINTEGER}         { return PyTokenTypes.INTEGER_LITERAL; }
