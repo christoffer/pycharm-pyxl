@@ -130,7 +130,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                     } else if (token == PyxlTokenTypes.STRING) {
                         myBuilder.advanceLexer();
                     } else {
-                        myBuilder.error("pyxl encountered unexpected token: " + token.toString());
+                        myBuilder.error(String.format("pyxl encountered unexpected token: %s", token));
                         pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
                         return;
                     }
