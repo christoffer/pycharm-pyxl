@@ -67,9 +67,6 @@ public class PyxlParserDefinition extends PythonParserDefinition {
     }
 
     private static class PyxlExpressionParsing extends ExpressionParsing {
-        private static final List<PyElementType> PYXL_BEGIN_TOKENS =
-                Arrays.asList(PyxlTokenTypes.TAGBEGIN, PyxlTokenTypes.IFTAG);
-
         private static final List<PyElementType> PYXL_CLOSE_TOKENS =
                 Arrays.asList(PyxlTokenTypes.TAGCLOSE); // , PyxlTokenTypes.IFTAGCLOSE);
 
@@ -81,7 +78,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             boolean match = super.parsePrimaryExpression(isTargetExpression);
             if (!match) {
                 //noinspection SuspiciousMethodCalls
-                if (PYXL_BEGIN_TOKENS.contains(myBuilder.getTokenType())) {
+                if (myBuilder.getTokenType() == PyxlTokenTypes.TAGBEGIN) {
                     parsePyxlTag();
                     return true;
                 }
@@ -94,58 +91,77 @@ public class PyxlParserDefinition extends PythonParserDefinition {
          */
         private void parsePyxlTag() {
             final PsiBuilder.Marker pyxl = myBuilder.mark();
-
-            // Consume either < or <if>
             myBuilder.advanceLexer();
 
-            // Consume the tag_name in <tag_name
-            if (myBuilder.getTokenType() == PyxlTokenTypes.TAGNAME) {
-                consumeTokenAsPyxlTag();
-            }
+            IElementType token = myBuilder.getTokenType();
 
-            // Consume attributes.
-            parsePyxlAttributes();
-
-            if (myBuilder.getTokenType() == PyxlTokenTypes.TAGENDANDCLOSE) {
-                // The tag was self-closed ( /> ).
-                myBuilder.advanceLexer();
+            if (!parsePyxlTagName()) {
+                myBuilder.error("pyxl expected starting tag");
                 pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
                 return;
-            } else if (myBuilder.getTokenType() == PyxlTokenTypes.TAGEND) {
+            }
+
+            parsePyxlAttributes();
+            token = myBuilder.getTokenType();
+
+            if (token == PyxlTokenTypes.TAGENDANDCLOSE) {
+                // The tag was self-closed ( /> ).
+                myBuilder.advanceLexer();
+            } else if (token == PyxlTokenTypes.TAGEND) {
                 // The tag has content (even empty content counts).
                 myBuilder.advanceLexer();
 
-                // Parse content.
-                while (!myBuilder.eof()) {
+                // Parse pyxl tag content.
+                while ((token = myBuilder.getTokenType()) != PyxlTokenTypes.TAGCLOSE) {
                     // Parse embed expressions of the form {python_code}.
                     if (parsePyxlEmbed() == null) {
-                        break;
-                    }
-
-                    if (myBuilder.getTokenType() == PyxlTokenTypes.STRING) {
-                        myBuilder.advanceLexer();
-                    } else if (PYXL_BEGIN_TOKENS.contains(myBuilder.getTokenType())) {
-                        // Another pyxl tag just got started.
-                        parsePyxlTag();
-                    } else if (PYXL_CLOSE_TOKENS.contains(myBuilder.getTokenType())) {
-                        // The tag got closed by </tag>.
-                        consumeTokenAsPyxlTag();
                         pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
                         return;
-                    } else {
+                    }
+
+                    token = myBuilder.getTokenType();
+                    if (token == PyxlTokenTypes.TAGBEGIN) {
+                        parsePyxlTag();
+                    } else if (token == PyxlTokenTypes.STRING) {
                         myBuilder.advanceLexer();
+                    } else {
+                        myBuilder.error("pyxl encountered unexpected token: " + token.toString());
+                        pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
+                        return;
                     }
                 }
-            }
 
-            myBuilder.error("pyxl expected");
+                // Consume the </ token.
+                myBuilder.advanceLexer();
+
+                if (!parsePyxlTagName()) {
+                    myBuilder.error("pyxl expected closing tag");
+                    pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
+                    return;
+                }
+
+                if (myBuilder.getTokenType() == PyxlTokenTypes.TAGEND) {
+                    myBuilder.advanceLexer();
+                } else {
+                    myBuilder.error("pyxl expected >");
+                }
+            }
             pyxl.done(PyxlElementTypes.PYXL_STATEMENT);
         }
 
-        private void consumeTokenAsPyxlTag() {
-            final PsiBuilder.Marker endTag = myBuilder.mark();
-            myBuilder.advanceLexer();
-            endTag.done(PyxlElementTypes.PYXL_TAG_PY_REFERENCE);
+        private boolean parsePyxlTagName() {
+            final IElementType token = myBuilder.getTokenType();
+
+            if (token == PyxlTokenTypes.TAGNAME) {
+                final PsiBuilder.Marker endTag = myBuilder.mark();
+                myBuilder.advanceLexer();
+                endTag.done(PyxlElementTypes.PYXL_TAG_PY_REFERENCE);
+            } else if (token == PyxlTokenTypes.IFTAG || token == PyxlTokenTypes.ELSETAG) {
+                myBuilder.advanceLexer();
+            } else {
+                return false;
+            }
+            return true;
         }
 
         /**
