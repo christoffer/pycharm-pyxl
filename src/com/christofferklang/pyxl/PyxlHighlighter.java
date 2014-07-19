@@ -1,5 +1,6 @@
 package com.christofferklang.pyxl;
 
+import com.christofferklang.pyxl.parsing.PyxlLexerAdapter;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterBase;
@@ -37,8 +38,7 @@ class PyxlHighlighter extends PyHighlighter {
         keys1.put(PyxlElementTypes.TAG, PyxlHighlighterColors.PYXL_EMBEDDED);
 
         keys1.put(PyxlTokenTypes.TAGNAME, PyxlHighlighterColors.PYXL_TAG_NAME);
-        keys1.put(PyxlTokenTypes.IFTAG, PyxlHighlighterColors.PYXL_TAG_NAME);
-        keys1.put(PyxlTokenTypes.ELSETAG, PyxlHighlighterColors.PYXL_TAG_NAME);
+        keys1.put(PyxlTokenTypes.BUILT_IN_TAG, PyxlHighlighterColors.PYXL_TAG_NAME);
 
         keys1.put(PyxlTokenTypes.ATTRNAME, PyxlHighlighterColors.PYXL_ATTRIBUTE_NAME);
         keys1.put(PyxlTokenTypes.ATTRVALUE, PyxlHighlighterColors.PYXL_ATTRIBUTE_VALUE);

@@ -1,5 +1,7 @@
-package com.christofferklang.pyxl;
+package com.christofferklang.pyxl.parsing;
 
+import com.christofferklang.pyxl.PyxlElementTypes;
+import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.PsiParser;
 import com.intellij.lexer.Lexer;
@@ -202,7 +204,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 final PsiBuilder.Marker tag = myBuilder.mark();
                 myBuilder.advanceLexer();
                 tag.done(PyxlElementTypes.TAG_REFERENCE);
-            } else if (token == PyxlTokenTypes.IFTAG || token == PyxlTokenTypes.ELSETAG) {
+            } else if (token == PyxlTokenTypes.BUILT_IN_TAG ) {
                 myBuilder.advanceLexer();
             } else {
                 throw new PyxlParsingException();
