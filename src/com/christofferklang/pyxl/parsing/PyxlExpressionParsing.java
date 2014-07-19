@@ -9,6 +9,7 @@ import com.jetbrains.python.PyTokenTypes;
 import com.jetbrains.python.parsing.ExpressionParsing;
 import com.jetbrains.python.parsing.ParsingContext;
 import com.jetbrains.python.psi.PyElementType;
+import com.sun.javafx.beans.annotations.NonNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
 class PyxlExpressionParsing extends ExpressionParsing {
     private static class PyxlParsingException extends Throwable {}
 
-    public class Token {
+    private static class Token {
         public final IElementType type;
         public final String text;
 
@@ -25,8 +26,22 @@ class PyxlExpressionParsing extends ExpressionParsing {
             this.text = text;
         }
 
+        @NonNull
+        public String getTagName() {
+            return String.format("%s", text);
+        }
+
         public String toString() {
             return String.format("%s: %s", type, text);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if(obj instanceof Token) {
+                Token other = (Token) obj;
+                return other.type.equals(type) && other.getTagName().equals(getTagName());
+            }
+            return false;
         }
     }
 
@@ -119,8 +134,8 @@ class PyxlExpressionParsing extends ExpressionParsing {
             try {
                 parsePyxlTagName(startToken);
             } catch (PyxlParsingException e) {
-                myBuilder.error(String.format("pyxl expected closing %s", startToken.toString()));
                 pyxl.done(PyxlElementTypes.TAG);
+                myBuilder.error(String.format("pyxl expected closing tag: </%s>", startToken.getTagName()));
                 return;
             }
 
@@ -140,8 +155,9 @@ class PyxlExpressionParsing extends ExpressionParsing {
     private Token parsePyxlTagName(Token expectedToken) throws PyxlParsingException {
         final IElementType token = myBuilder.getTokenType();
         final String text = myBuilder.getTokenText();
+        Token thisToken = new Token(token, text);
 
-        if (expectedToken != null && (token != expectedToken.type || !text.equals(expectedToken.text))) {
+        if (expectedToken != null && !thisToken.equals(expectedToken)) {
             throw new PyxlParsingException();
         }
 
@@ -154,7 +170,8 @@ class PyxlExpressionParsing extends ExpressionParsing {
         } else {
             throw new PyxlParsingException();
         }
-        return new Token(token, text);
+
+        return thisToken;
     }
     private Token parsePyxlTagName() throws PyxlParsingException {
         return parsePyxlTagName(null);
