@@ -2,11 +2,10 @@ package com.christofferklang.pyxl.parsing;
 
 import com.intellij.lexer.FlexAdapter;
 
-/**
- * Created by Christoffer on 7/19/2014.
- */
+import java.io.Reader;
+
 public class PyxlLexerAdapter extends FlexAdapter {
     public PyxlLexerAdapter() {
-        super(new PyxlLexer());
+        super(new PyxlLexer((Reader) null));
     }
 }
