@@ -69,6 +69,20 @@ public class PyxlParserDefinition extends PythonParserDefinition {
     private static class PyxlExpressionParsing extends ExpressionParsing {
         private static class PyxlParsingException extends Throwable {}
 
+        public class Token {
+            public final IElementType type;
+            public final String text;
+
+            public Token(IElementType type, String text) {
+                this.type = type;
+                this.text = text;
+            }
+
+            public String toString() {
+                return String.format("%s: %s", type, text);
+            }
+        }
+
         private static final List<PyElementType> PYXL_CLOSE_TOKENS =
                 Arrays.asList(PyxlTokenTypes.TAGCLOSE); // , PyxlTokenTypes.IFTAGCLOSE);
 
@@ -95,17 +109,21 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             final PsiBuilder.Marker pyxl = myBuilder.mark();
             myBuilder.advanceLexer();
 
-            IElementType token = myBuilder.getTokenType();
-
-            if (!parsePyxlTagName()) {
+            Token startToken;
+            try {
+                startToken = parsePyxlTagName();
+            } catch (PyxlParsingException e) {
                 myBuilder.error("pyxl expected starting tag");
-                pyxl.done(PyxlElementTypes.STATEMENT);
+                pyxl.done(PyxlElementTypes.TAG);
                 return;
             }
 
-            parsePyxlAttributes();
-            token = myBuilder.getTokenType();
+            if (!parsePyxlAttributes()) {
+                pyxl.done(PyxlElementTypes.TAG);
+                return;
+            }
 
+            IElementType token = myBuilder.getTokenType();
             if (token == PyxlTokenTypes.TAGENDANDCLOSE) {
                 // The tag was self-closed ( /> ).
                 final PsiBuilder.Marker argumentList = myBuilder.mark();
@@ -144,16 +162,18 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                 argumentList.done(PyElementTypes.ARGUMENT_LIST);
 
                 if (error) {
-                    pyxl.done(PyxlElementTypes.STATEMENT);
+                    pyxl.done(PyxlElementTypes.TAG);
                     return;
                 }
 
                 // Consume the </ token.
                 myBuilder.advanceLexer();
 
-                if (!parsePyxlTagName()) {
-                    myBuilder.error("pyxl expected closing tag");
-                    pyxl.done(PyxlElementTypes.STATEMENT);
+                try {
+                    parsePyxlTagName(startToken);
+                } catch (PyxlParsingException e) {
+                    myBuilder.error(String.format("pyxl expected closing %s", startToken.toString()));
+                    pyxl.done(PyxlElementTypes.TAG);
                     return;
                 }
 
@@ -163,15 +183,20 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                     myBuilder.error("pyxl expected >");
                 }
             }
-            pyxl.done(PyxlElementTypes.STATEMENT);
+            pyxl.done(PyxlElementTypes.TAG);
         }
 
         /**
          * Parse the name of a pyxl tag, an if tag, or an else tag.
          * @return true if a tag name was parsed, or false otherwise.
          */
-        private boolean parsePyxlTagName() {
+        private Token parsePyxlTagName(Token expectedToken) throws PyxlParsingException {
             final IElementType token = myBuilder.getTokenType();
+            final String text = myBuilder.getTokenText();
+
+            if (expectedToken != null && (token != expectedToken.type || !text.equals(expectedToken.text))) {
+                throw new PyxlParsingException();
+            }
 
             if (token == PyxlTokenTypes.TAGNAME) {
                 final PsiBuilder.Marker tag = myBuilder.mark();
@@ -180,9 +205,12 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             } else if (token == PyxlTokenTypes.IFTAG || token == PyxlTokenTypes.ELSETAG) {
                 myBuilder.advanceLexer();
             } else {
-                return false;
+                throw new PyxlParsingException();
             }
-            return true;
+            return new Token(token, text);
+        }
+        private Token parsePyxlTagName() throws PyxlParsingException {
+            return parsePyxlTagName(null);
         }
 
         /**
@@ -214,7 +242,7 @@ public class PyxlParserDefinition extends PythonParserDefinition {
         /**
          * Parse all pyxl tag attribute="value" pairs.
          */
-        private void parsePyxlAttributes() {
+        private boolean parsePyxlAttributes() {
             while (myBuilder.getTokenType() == PyxlTokenTypes.ATTRNAME) {
                 final PsiBuilder.Marker attr = myBuilder.mark();
                 final PsiBuilder.Marker attrName = myBuilder.mark();
@@ -228,13 +256,18 @@ public class PyxlParserDefinition extends PythonParserDefinition {
 
                         // Parse the next attribute="value" pair.
                         continue;
+                    } else {
+                        // parsePyxlAttributeValue sets its own errors.
+                        attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
+                        return false;
                     }
                 } else {
                     myBuilder.error("pyxl expected =");
+                    attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
+                    return false;
                 }
-
-                attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
             }
+            return true;
         }
 
         /**
@@ -247,10 +280,10 @@ public class PyxlParserDefinition extends PythonParserDefinition {
             IElementType token = myBuilder.getTokenType();
 
             // Consume the start of an attribute.
-            IElementType startToken = null;
+            IElementType attrStartToken = null;
             if (token == PyxlTokenTypes.ATTRVALUE_START) {
                 myBuilder.advanceLexer();
-                startToken = token;
+                attrStartToken = token;
             }
 
             boolean foundValue = false;
@@ -274,12 +307,12 @@ public class PyxlParserDefinition extends PythonParserDefinition {
                     continue;
                 }
 
-                if (startToken != null) {
+                if (attrStartToken != null) {
                     if (token == PyxlTokenTypes.ATTRVALUE_END) {
                         myBuilder.advanceLexer();
                         return true;
                     } else {
-                        myBuilder.error("pyxl expected " + startToken);
+                        myBuilder.error("pyxl expected attribute end");
                         return false;
                     }
                 } else if (foundValue) {
