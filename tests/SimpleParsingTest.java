@@ -1,5 +1,5 @@
 
-import com.christofferklang.pyxl.PyxlParserDefinition;
+import com.christofferklang.pyxl.parsing.PyxlParserDefinition;
 import com.intellij.testFramework.ParsingTestCase;
 
 public class SimpleParsingTest extends ParsingTestCase {

@@ -1,4 +1,4 @@
-package com.christofferklang.pyxl;
+package com.christofferklang.pyxl.parsing;
 
 import com.intellij.lexer.FlexLexer;
 import com.intellij.psi.tree.IElementType;
@@ -219,8 +219,8 @@ private IElementType handleRightBrace() {
 }
 
 <IN_CLOSE_TAG> {
-"if" { return PyxlTokenTypes.IFTAG; }
-"else" { return PyxlTokenTypes.ELSETAG; }
+"if" { return PyxlTokenTypes.BUILT_IN_TAG; }
+"else" { return PyxlTokenTypes.BUILT_IN_TAG; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.TAGNAME; }
 ">"                   { yybegin(IN_PYXL_BLOCK); return closeTag() ? PyxlTokenTypes.TAGEND : PyxlTokenTypes.BADCHAR; }
 .                     { return PyxlTokenTypes.BADCHAR; }
@@ -272,8 +272,8 @@ private IElementType handleRightBrace() {
 
 <IN_PYXL_TAG_NAME> { // parse a tag name
 //">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
-"if" { yybegin(IN_ATTR); return PyxlTokenTypes.IFTAG; }
-"else" { yybegin(IN_ATTR); return PyxlTokenTypes.ELSETAG; }
+"if" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
+"else" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
 
 {PYXL_ATTRNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
 //{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }

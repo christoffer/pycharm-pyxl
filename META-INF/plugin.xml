@@ -26,7 +26,7 @@
         <lang.parserDefinition
                 language="Python"
                 order="first, before PythonParserDefinition"
-                implementationClass="com.christofferklang.pyxl.PyxlParserDefinition"
+                implementationClass="com.christofferklang.pyxl.parsing.PyxlParserDefinition"
                 />
 
         <lang.syntaxHighlighterFactory
