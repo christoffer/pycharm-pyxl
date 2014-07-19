@@ -113,7 +113,9 @@ class PyxlExpressionParsing extends ExpressionParsing {
                 if (token == PyxlTokenTypes.TAGBEGIN) {
                     parsePyxlTag();
                 } else if (token == PyxlTokenTypes.STRING) {
+                    PsiBuilder.Marker stringLiteral = myBuilder.mark();
                     myBuilder.advanceLexer();
+                    stringLiteral.done(PyElementTypes.STRING_LITERAL_EXPRESSION);
                 } else {
                     myBuilder.error(String.format("pyxl encountered unexpected token: %s", token));
                     error = true;
