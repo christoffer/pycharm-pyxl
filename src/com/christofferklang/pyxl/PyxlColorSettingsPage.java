@@ -1,6 +1,5 @@
 package com.christofferklang.pyxl;
 
-import com.intellij.openapi.editor.XmlHighlighterColors;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.options.colors.AttributesDescriptor;
