@@ -44,6 +44,7 @@ public class PyxlColorSettingsPage implements ColorSettingsPage {
                 "def generate():\n" +
                 "	markup = (\n" +
                 "		<html>\n" +
+                "       <!-- Comment -->\n" +
                 "			<body class=\"the-body-class\" data-value=\"'value-{get_value()}\">\n" +
                 "			Hello {user.get_name()}!\n" +
                 "			</body>\n" +

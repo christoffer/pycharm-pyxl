@@ -21,7 +21,6 @@ public class PyxlTokenTypes {
     public static final PyElementType TAGENDANDCLOSE = new PyElementType("PYXL TAGENDANDCLOSE />");
 
     public static final PyElementType BUILT_IN_TAG = new PyElementType("PYXL BUILT IN TAG");
-    public static final PyElementType ELSETAG = new PyElementType("PYXL ELSE tag");
 
     public static final PyElementType EMBED_START = new PyElementType("PYXL PYTHON EMBED BEGIN {");
     public static final PyElementType EMBED_END = new PyElementType("PYXL PYTHON EMBED END }");

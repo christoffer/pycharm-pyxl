@@ -84,6 +84,7 @@ PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. 
 PYXL_ATTR = {S}{PYXL_ATTRNAME}{S}"="{S}{PYXL_ATTRVALUE}{S}
 PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(">"|"/>")
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
+PYXL_COMMENT = "<!--" ([^\-]|(-[^\-])|(--[^>]))* "-->"
 
 // approximate matches (slightly optimistic - can match on some syntax errors) used for looking for tag.
 PYXL_ATTRVALUE_LITERAL = (\"|')({PYXL_ATTRVALUE_2Q}|{PYXL_ATTRVALUE_1Q}|{PYXL_PYTHON_EMBED}?)+(\"|')
@@ -105,7 +106,6 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 
 %state IN_PYXL_DOCUMENT
 %state IN_PYXL_BLOCK
-%state IN_PYXL_COMMENT
 %state IN_PYXL_TAG_NAME
 %state IN_PYXL_PYTHON_EMBED
 
@@ -128,10 +128,6 @@ private Integer popState() {
 // The document can be in either "pyxl" or "normal" state, which translates to the parser states
 // IN_PYXL_DOCUMENT and YYINITIAL resp.
 private int documentRootState = YYINITIAL;
-
-// The state the document was in as we enter a pyxl comment. We don't need a stack here since
-// comments can't be nested.
-int commentStartState = YYINITIAL;
 
 // Counter for keeping track of when an embed statment ends, as opposed to when inner braces closes.
 int embedBraceCount = 0;
@@ -195,12 +191,6 @@ private IElementType handleRightBrace() {
 [\f]                        { return PyTokenTypes.FORMFEED; }
 "\\"                        { return PyTokenTypes.BACKSLASH; }
 
-<IN_PYXL_COMMENT> {
-    "-->" { yybegin(commentStartState); return PyTokenTypes.END_OF_LINE_COMMENT; }
-    [^\-]|(-[^\-])|(--[^>]) { return PyTokenTypes.END_OF_LINE_COMMENT; }
-    [^] { return PyxlTokenTypes.BADCHAR; }
-}
-
 <IN_PYXL_PYTHON_EMBED> {
 {SINGLE_QUOTED_STRING} { return PyTokenTypes.SINGLE_QUOTED_STRING; }
 {TRIPLE_QUOTED_STRING} { return PyTokenTypes.TRIPLE_QUOTED_STRING; }
@@ -227,11 +217,7 @@ private IElementType handleRightBrace() {
 }
 
 <IN_PYXL_BLOCK> {
-"<!--" {
-    commentStartState = yystate(); // Remember which state we should return to after the comment
-    yybegin(IN_PYXL_COMMENT);
-    return PyTokenTypes.END_OF_LINE_COMMENT;
-}
+{PYXL_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
 "{"                   { pushState(IN_PYXL_BLOCK); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 {PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
