@@ -11,12 +11,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class PyxlTagReference extends PyReferenceExpressionImpl {
+public class PyTagClassReference extends PyReferenceExpressionImpl {
     private static final Set<String> EMPTY_HASH_SET = new HashSet<String>();
 
     private Set<String> mCachedSpecialPyxlTagNames = null;
 
-    public PyxlTagReference(ASTNode astNode) {
+    public PyTagClassReference(ASTNode astNode) {
         super(astNode);
     }
 
@@ -100,6 +100,6 @@ public class PyxlTagReference extends PyReferenceExpressionImpl {
 
     @Override
     public String toString() {
-        return "PyxlTagReference: " + getReferencedName();
+        return "PyClassTagReference: " + getReferencedName();
     }
 }
