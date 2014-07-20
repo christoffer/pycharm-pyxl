@@ -1,5 +1,7 @@
 package com.christofferklang.pyxl.parsing;
 
+import com.christofferklang.pyxl.PyxlElementTypes;
+import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.intellij.lang.PsiParser;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.project.Project;
@@ -21,6 +23,12 @@ public class PyxlParserDefinition extends PythonParserDefinition {
     @NotNull
     public PsiParser createParser(Project project) {
         return new PyxlParser();
+    }
+
+    @NotNull
+    @Override
+    public TokenSet getStringLiteralElements() {
+        return TokenSet.orSet(super.getStringLiteralElements(), TokenSet.create(PyxlTokenTypes.STRING));
     }
 
     private class PyxlIndentingLexer extends PythonIndentingProcessor {
