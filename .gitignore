@@ -3,3 +3,4 @@ out/
 *.iml
 .DS_Store
 src/com/christofferklang/pyxl/PyxlLexer.java~
+*.java~
