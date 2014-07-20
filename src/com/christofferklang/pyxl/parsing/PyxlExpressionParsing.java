@@ -8,6 +8,7 @@ import com.jetbrains.python.PyElementTypes;
 import com.jetbrains.python.PyTokenTypes;
 import com.jetbrains.python.parsing.ExpressionParsing;
 import com.jetbrains.python.parsing.ParsingContext;
+import com.jetbrains.python.psi.PyCallExpression;
 import com.jetbrains.python.psi.PyElementType;
 import com.sun.javafx.beans.annotations.NonNull;
 
@@ -164,9 +165,11 @@ class PyxlExpressionParsing extends ExpressionParsing {
         }
 
         if (token == PyxlTokenTypes.TAGNAME) {
+            final PsiBuilder.Marker fakeInitCall = myBuilder.mark();
             final PsiBuilder.Marker tag = myBuilder.mark();
             myBuilder.advanceLexer();
             tag.done(PyxlElementTypes.TAG_REFERENCE);
+            fakeInitCall.done(PyElementTypes.CALL_EXPRESSION);
         } else if (token == PyxlTokenTypes.BUILT_IN_TAG ) {
             myBuilder.advanceLexer();
         } else {
