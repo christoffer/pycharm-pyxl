@@ -1,15 +1,21 @@
 <idea-plugin version="2">
     <id>com.christofferklang.pyxl</id>
-    <name>Pyxl Extensions</name>
-    <version>0.1</version>
+    <name>Pyxl Support</name>
+    <version>1.0-beta</version>
     <vendor email="christoffer.klang@gmail.com">Christoffer Klang</vendor>
 
     <description><![CDATA[
-      Provides extensions to PyCharm for working with <a href="https://github.com/dropbox/pyxl">Pyxl</a> files.
+      Adds support for <a href="https://github.com/dropbox/pyxl">Pyxl</a> files.
+
+      Created by Nils Bunger (nils@dropbox.com), Robert Kajic (kajic@dropbox.com) and Christoffer Klang (christoffer@dropbox.com).
+
+      Please report any bugs or missing features to https://github.com/christoffer/pycharm-pyxl, or email any of the creators.
+
+      Requires PyCharm or the Python plugin.
     ]]></description>
 
     <change-notes><![CDATA[
-      Initial version with Goto Pyxl definition.
+      First release with basic support for Pyxl.
     ]]>
     </change-notes>
 
