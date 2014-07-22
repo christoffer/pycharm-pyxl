@@ -38,6 +38,11 @@
         <colorSettingsPage implementation="com.christofferklang.pyxl.PyxlColorSettingsPage" />
     </extensions>
 
+    <extensions defaultExtensionNs="Pythonid">
+        <dialectsTokenSetContributor
+                implementation="com.christofferklang.pyxl.PyxlDialectTokenContributor" />
+    </extensions>
+
     <application-components>
         <!-- Add your application components here -->
     </application-components>
