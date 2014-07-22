@@ -115,47 +115,26 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 %state IN_CLOSE_TAG
 
 %{
-
-
-private void pushState(Integer state) {
-    stateStack.push(state);
+private void enterState(int state) {
+    stateStack.push(yystate());
+    yybegin(state);
 }
-
-private Integer popState() {
-    return stateStack.pop();
+private boolean exitState() {
+    int size = stateStack.size();
+    if (size <= 0) {
+        yybegin(YYINITIAL);
+        return false;   // error condition
+    } else {
+        yybegin(stateStack.pop());
+        return true;
+    }
 }
-
-// The document can be in either "pyxl" or "normal" state, which translates to the parser states
-// IN_PYXL_DOCUMENT and YYINITIAL resp.
-private int documentRootState = YYINITIAL;
 
 // Counter for keeping track of when an embed statment ends, as opposed to when inner braces closes.
 int embedBraceCount = 0;
 
-Stack<String> tagStack = new Stack<String>();
 Stack<Integer> stateStack = new Stack<Integer>();
 
-
-private void openTag() {
-    tagStack.push("Moo");
-    yybegin(IN_PYXL_TAG_NAME);
-}
-
-private boolean closeTag() {
-    int size = tagStack.size();
-    if (size == 1) {
-        tagStack.pop();
-        yybegin(documentRootState);    // done with pyxl code.
-        return true;
-    } else if (size == 0) {
-        yybegin(documentRootState);    // done with pyxl code.
-        return false;   // error
-    } else {
-        tagStack.pop();
-        yybegin(IN_PYXL_BLOCK); // back to pyxl-block state
-        return true;
-    }
-}
 
 %}
 
@@ -176,7 +155,7 @@ return yylength()-s.length();
 private IElementType handleRightBrace() {
 
     if (--embedBraceCount == 0) {
-        yybegin(popState());
+        exitState();
         return PyxlTokenTypes.EMBED_END;
     } else {
         return PyTokenTypes.RBRACE;
@@ -202,7 +181,7 @@ private IElementType handleRightBrace() {
 
 <IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, IN_PYXL_DOCUMENT> {
     {PYXL_TAG} {
-        openTag();
+        enterState(IN_PYXL_TAG_NAME);
         yypushback(yylength()-1);
         return PyxlTokenTypes.TAGBEGIN;
     }
@@ -212,32 +191,31 @@ private IElementType handleRightBrace() {
 "if" { return PyxlTokenTypes.BUILT_IN_TAG; }
 "else" { return PyxlTokenTypes.BUILT_IN_TAG; }
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.TAGNAME; }
-">"                   { yybegin(IN_PYXL_BLOCK); return closeTag() ? PyxlTokenTypes.TAGEND : PyxlTokenTypes.BADCHAR; }
+">"                   { return exitState() ? PyxlTokenTypes.TAGEND : PyxlTokenTypes.BADCHAR; }
 .                     { return PyxlTokenTypes.BADCHAR; }
 }
 
 <IN_PYXL_BLOCK> {
 {PYXL_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
-"{"                   { pushState(IN_PYXL_BLOCK); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                   { enterState(IN_PYXL_PYTHON_EMBED); embedBraceCount++; return PyxlTokenTypes.EMBED_START; }
 {PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
-
 }
 
 <ATTR_VALUE_1Q> {
-"'" { yybegin(IN_ATTR); return PyxlTokenTypes.ATTRVALUE_END; }  // end of attribute value
+"'" { exitState(); return PyxlTokenTypes.ATTRVALUE_END; }  // end of attribute value
 {PYXL_ATTRVALUE_1Q} { return PyxlTokenTypes.ATTRVALUE;}
-"{"                   { pushState(ATTR_VALUE_1Q); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                   { embedBraceCount++; enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 . { return PyxlTokenTypes.BADCHAR;}
 }
 
 <ATTR_VALUE_2Q> {
-"\"" { yybegin(IN_ATTR); return PyxlTokenTypes.ATTRVALUE_END;}  // end of attribute value
+"\"" { exitState(); return PyxlTokenTypes.ATTRVALUE_END;}  // end of attribute value
 {PYXL_ATTRVALUE_2Q} { return PyxlTokenTypes.ATTRVALUE;}
-"{"                   { pushState(ATTR_VALUE_2Q);embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                   { embedBraceCount++; enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 [^] { return PyxlTokenTypes.BADCHAR;}
 
 }
@@ -245,13 +223,13 @@ private IElementType handleRightBrace() {
 <IN_ATTR> { // parse an attribute name and value
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
 "="                   { return PyTokenTypes.EQ; }
-"'" { yybegin(ATTR_VALUE_1Q); return PyxlTokenTypes.ATTRVALUE_START; }
-"\"" { yybegin(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
+"'" { enterState(ATTR_VALUE_1Q); return PyxlTokenTypes.ATTRVALUE_START; }
+"\"" { enterState(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
 
 // python embed without quotes -- should we really return here after this? Or is only a single value possible?
-"{"                 { pushState(IN_ATTR); embedBraceCount++; yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                 { embedBraceCount++; enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 ">"                 { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND;}
-"/>"                { return closeTag() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
+"/>"                { return exitState() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {END_OF_LINE_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
 . { return PyxlTokenTypes.BADCHAR; }
 }
@@ -262,42 +240,39 @@ private IElementType handleRightBrace() {
 "else" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
 
 {PYXL_ATTRNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
-//{PYXL_ATTRVALUE1} { return PyxlTokenTypes.ATTRVALUE; }
-//{PYXL_ATTRVALUE2} { return PyxlTokenTypes.ATTRVALUE; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
 }
 
 <IN_DOCSTRING_OWNER> {
-":"(\ )*{END_OF_LINE_COMMENT}?"\n"          { yypushback(yylength()-1); yybegin(PENDING_DOCSTRING); return PyTokenTypes.COLON; }
+":"(\ )*{END_OF_LINE_COMMENT}?"\n"          { yypushback(yylength()-1); enterState(PENDING_DOCSTRING); return PyTokenTypes.COLON; }
 }
 
 <PENDING_DOCSTRING> {
 {SINGLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
-                                 else yybegin(documentRootState); return PyTokenTypes.SINGLE_QUOTED_STRING; }
+                                 else exitState(); return PyTokenTypes.SINGLE_QUOTED_STRING; }
 {TRIPLE_QUOTED_STRING}          { if (zzInput == YYEOF) return PyTokenTypes.DOCSTRING;
-                                 else yybegin(documentRootState); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
-{DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); yybegin(documentRootState); return PyTokenTypes.DOCSTRING; }
+                                 else exitState(); return PyTokenTypes.TRIPLE_QUOTED_STRING; }
+{DOCSTRING_LITERAL}[\ \t]*[\n;]   { yypushback(getSpaceLength(yytext())); exitState(); return PyTokenTypes.DOCSTRING; }
 {DOCSTRING_LITERAL}[\ \t]*"\\"  { yypushback(getSpaceLength(yytext())); return PyTokenTypes.DOCSTRING; }
 
-.                               { yypushback(1); yybegin(documentRootState); }
+.                               { yypushback(1); exitState(); }
 }
 
 // NOTE(christoffer): Must be above YYINITIAL:{END_OF_LINE_COMMENT} as the length is identical, and
 // this must match before.
 <YYINITIAL> {
-    {PYXL_ENCODING_STRING} {
+    {PYXL_ENCODING_STRING} {    // Look for # coding: pyxl
         if(zzCurrentPos == 0) {
-            documentRootState = IN_PYXL_DOCUMENT;
-            yybegin(IN_PYXL_DOCUMENT);
+            enterState(IN_PYXL_DOCUMENT);
             return PyTokenTypes.END_OF_LINE_COMMENT;
         }
     }
 }
 
 <YYINITIAL, IN_PYXL_DOCUMENT> {
-[\n]                        { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyTokenTypes.LINE_BREAK; }
-{END_OF_LINE_COMMENT}       { if (zzCurrentPos == 0) yybegin(PENDING_DOCSTRING); return PyTokenTypes.END_OF_LINE_COMMENT; }
+[\n]                        { if (zzCurrentPos == 0) enterState(PENDING_DOCSTRING); return PyTokenTypes.LINE_BREAK; }
+{END_OF_LINE_COMMENT}       { if (zzCurrentPos == 0) enterState(PENDING_DOCSTRING); return PyTokenTypes.END_OF_LINE_COMMENT; }
 
 {SINGLE_QUOTED_STRING}          { if (zzInput == YYEOF && zzStartRead == 0) return PyTokenTypes.DOCSTRING;
                                  else return PyTokenTypes.SINGLE_QUOTED_STRING; }
@@ -312,17 +287,17 @@ return PyTokenTypes.DOCSTRING; }
 
 {SINGLE_QUOTED_STRING}[\ \t]*"\\"  {
  yypushback(getSpaceLength(yytext())); if (zzCurrentPos != 0) return PyTokenTypes.SINGLE_QUOTED_STRING;
- yybegin(PENDING_DOCSTRING); return PyTokenTypes.DOCSTRING; }
+ enterState(PENDING_DOCSTRING); return PyTokenTypes.DOCSTRING; }
 
 {TRIPLE_QUOTED_STRING}[\ \t]*"\\"  {
  yypushback(getSpaceLength(yytext())); if (zzCurrentPos != 0) return PyTokenTypes.TRIPLE_QUOTED_STRING;
- yybegin(PENDING_DOCSTRING); return PyTokenTypes.DOCSTRING; }
+ enterState(PENDING_DOCSTRING); return PyTokenTypes.DOCSTRING; }
 
 }
 
 [\n]                        { return PyTokenTypes.LINE_BREAK; }
 <YYINITIAL, IN_DOCSTRING_OWNER, PENDING_DOCSTRING, IN_PYXL_DOCUMENT> {
-// this is a rule that used to be for ALL states in python; with Pyxl addition we have to limit it to  python states only.
+// this rule was for ALL states in python; with Pyxl addition we have to limit it to  python states only.
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 }
 
