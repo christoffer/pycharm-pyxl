@@ -1,37 +1,37 @@
 # coding: pyxl
 
-from dropbox.pyxl import html
-
-def x_hi:
+def x_hi():
     pass
 
 def foo():
+    yy = 20
     <hi>
     </hi>
-    scaley = (yy<ymin) or (yy>ymax)
+    scaley = (yy<5) or (yy>100)
 
     return (
-        <frag>
+        <hi>
            <if cond="moo">
                 goo
             </if>
             <else>
                 zoo
             </else>
-            <footer boo="#" id="Zasdf { " " } asdfjkl ">
-            </footer>
-        </frag>
+            <hi boo="#" id="Zasdf { " " } asdfjkl ">
+            </hi>
+        </hi>
     )
 
 
 def zoo():
+    str = "abcdefg"
     return(
-        <footer id="foo-footer" class="zoo-bar clearfix">
+        <hi id="foo-footer" class="zoo-bar clearfix">
 
-            <nav>
-                {footer_links}
-            </nav>
+            <hi>
+                {str}
+            </hi>
 
-            <locale_selector />
-        </footer>
+            <hi />
+        </hi>
     )

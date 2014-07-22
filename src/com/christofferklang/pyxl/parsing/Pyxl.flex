@@ -41,8 +41,6 @@ IDENT_START = [a-zA-Z_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:
 IDENT_CONTINUE = [a-zA-Z0-9_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:]|[:unicode_titlecase_letter:]|[:unicode_modifier_letter:]|[:unicode_other_letter:]|[:unicode_letter_number:]|[:unicode_non_spacing_mark:]|[:unicode_combining_spacing_mark:]|[:unicode_decimal_digit_number:]|[:unicode_connector_punctuation:]
 IDENTIFIER = {IDENT_START}{IDENT_CONTINUE}**
 
-
-
 FLOATNUMBER=({POINTFLOAT})|({EXPONENTFLOAT})
 POINTFLOAT=(({INTPART})?{FRACTION})|({INTPART}\.)
 EXPONENTFLOAT=(({INTPART})|({POINTFLOAT})){EXPONENT}
@@ -51,10 +49,6 @@ FRACTION = \.({DIGIT})+
 EXPONENT = [eE][+\-]?({DIGIT})+
 
 IMAGNUMBER=(({FLOATNUMBER})|({INTPART}))[Jj]
-
-//STRING_LITERAL=[UuBb]?({RAW_STRING}|{QUOTED_STRING})
-//RAW_STRING=[Rr]{QUOTED_STRING}
-//QUOTED_STRING=({TRIPLE_APOS_LITERAL})|({QUOTED_LITERAL})|({DOUBLE_QUOTED_LITERAL})|({TRIPLE_QUOTED_LITERAL})
 
 SINGLE_QUOTED_STRING=[UuBbCcRr]{0,2}({QUOTED_LITERAL} | {DOUBLE_QUOTED_LITERAL})
 TRIPLE_QUOTED_STRING=[UuBbCcRr]{0,2}[UuBbCcRr]?({TRIPLE_QUOTED_LITERAL}|{TRIPLE_APOS_LITERAL})
@@ -78,7 +72,6 @@ APOS_STRING_CHAR = [^\\'] | {ANY_ESCAPE_SEQUENCE} | {ONE_TWO_APOS}
 TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
 
-// NILS:
 S = [\ \t\n]*
 PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
 PYXL_ATTR = {S}{PYXL_ATTRNAME}{S}"="{S}{PYXL_ATTRVALUE}{S}
@@ -94,11 +87,6 @@ PYXL_ATTRVALUE = ({PYXL_ATTRVALUE_LITERAL}|(\{.*\}))
 PYXL_ATTRVALUE_2Q = ([^\\\"\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 PYXL_ATTRVALUE_1Q = ([^\\'\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 
-// a quoted string without a python embed
-//PYXL_ATTRVALUE1 = '{PYXL_STRING_INSIDES}'
-//PYXL_ATTRVALUE2 = \"{PYXL_STRING_INSIDES}\"
-// a quoted string with a python embed
-//PYXL_QUOTED_PYTHON_EMBED = [\"']{PYXL_PYTHON_EMBED}[\"']
 // a normal python embed (with no quotes)
 PYXL_PYTHON_EMBED = \{([^\\\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?\}
 // a string in a pyxl block, outside tags and quotes (can't contain {}  <> # etc)
@@ -116,8 +104,9 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 
 %{
 private void enterState(int state) {
-    stateStack.push(yystate());
+    stateStack.push(new State(yystate(), embedBraceCount));
     yybegin(state);
+    embedBraceCount = 0;
 }
 private boolean exitState() {
     int size = stateStack.size();
@@ -125,7 +114,9 @@ private boolean exitState() {
         yybegin(YYINITIAL);
         return false;   // error condition
     } else {
-        yybegin(stateStack.pop());
+        State mystate = stateStack.pop();
+        yybegin(mystate.lexState);
+        embedBraceCount = mystate.embedBraceCount;
         return true;
     }
 }
@@ -133,8 +124,16 @@ private boolean exitState() {
 // Counter for keeping track of when an embed statment ends, as opposed to when inner braces closes.
 int embedBraceCount = 0;
 
-Stack<Integer> stateStack = new Stack<Integer>();
+class State {
+    public int lexState;
+    public int embedBraceCount;
 
+    State (int lexState, int embedBraceCount) {
+        this.lexState = lexState;
+        this.embedBraceCount = embedBraceCount;
+    }
+}
+Stack<State> stateStack = new Stack<State>();
 
 %}
 
@@ -151,17 +150,6 @@ return yylength()-s.length();
 
 }
 
-// handle a right brace in a python embed
-private IElementType handleRightBrace() {
-
-    if (--embedBraceCount == 0) {
-        exitState();
-        return PyxlTokenTypes.EMBED_END;
-    } else {
-        return PyTokenTypes.RBRACE;
-    }
-}
-
 %}
 %%
 
@@ -174,12 +162,18 @@ private IElementType handleRightBrace() {
 {SINGLE_QUOTED_STRING} { return PyTokenTypes.SINGLE_QUOTED_STRING; }
 {TRIPLE_QUOTED_STRING} { return PyTokenTypes.TRIPLE_QUOTED_STRING; }
 "{"                     { embedBraceCount++; return PyTokenTypes.LBRACE; }
-"}"                   { return handleRightBrace(); }
+"}"                    {   if (embedBraceCount-- == 0) {
+                               exitState();
+                               return PyxlTokenTypes.EMBED_END;
+                           } else {
+                               return PyTokenTypes.RBRACE;
+                           }
+                        }
 // remainder of python is defined below in the python states.
 }
 
 
-<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, IN_PYXL_DOCUMENT> {
+<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, IN_PYXL_DOCUMENT, IN_PYXL_PYTHON_EMBED> {
     {PYXL_TAG} {
         enterState(IN_PYXL_TAG_NAME);
         yypushback(yylength()-1);
@@ -197,7 +191,7 @@ private IElementType handleRightBrace() {
 
 <IN_PYXL_BLOCK> {
 {PYXL_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
-"{"                   { enterState(IN_PYXL_PYTHON_EMBED); embedBraceCount++; return PyxlTokenTypes.EMBED_START; }
+"{"                   { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 {PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
@@ -208,14 +202,14 @@ private IElementType handleRightBrace() {
 <ATTR_VALUE_1Q> {
 "'" { exitState(); return PyxlTokenTypes.ATTRVALUE_END; }  // end of attribute value
 {PYXL_ATTRVALUE_1Q} { return PyxlTokenTypes.ATTRVALUE;}
-"{"                   { embedBraceCount++; enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                   { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 . { return PyxlTokenTypes.BADCHAR;}
 }
 
 <ATTR_VALUE_2Q> {
 "\"" { exitState(); return PyxlTokenTypes.ATTRVALUE_END;}  // end of attribute value
 {PYXL_ATTRVALUE_2Q} { return PyxlTokenTypes.ATTRVALUE;}
-"{"                   { embedBraceCount++; enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                   { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 [^] { return PyxlTokenTypes.BADCHAR;}
 
 }
@@ -227,7 +221,7 @@ private IElementType handleRightBrace() {
 "\"" { enterState(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
 
 // python embed without quotes -- should we really return here after this? Or is only a single value possible?
-"{"                 { embedBraceCount++; enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+"{"                 { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 ">"                 { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND;}
 "/>"                { return exitState() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {END_OF_LINE_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }

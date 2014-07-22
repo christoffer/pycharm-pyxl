@@ -5,12 +5,20 @@ import com.jetbrains.python.PythonDialectsTokenSetContributor;
 import com.jetbrains.python.PythonTokenSetContributor;
 
 public class PyxlParsingTest extends ParsingTestCase {
-    public PyxlParsingTest() {
-        super("", "py", new PyxlParserDefinition());
-    }
 
+    // Add each new test here as a method, and the corresponding .py file in testdata/ folder.
     public void testParsingTestData() {
         doTest(true);
+    }
+    public void testnestedembed() {
+        doTest(true);
+    }
+    public void testclass_self_ref() {
+        doTest(true);
+    }
+
+    public PyxlParsingTest() {
+        super("", "py", new PyxlParserDefinition());
     }
 
     @Override
@@ -23,7 +31,7 @@ public class PyxlParsingTest extends ParsingTestCase {
     }
     @Override
     protected String getTestDataPath() {
-        return "../pycharm-pyxl/testData/";
+        return "../pycharm-pyxl/testdata/";
     }
 
     @Override
