@@ -8,15 +8,15 @@ import com.jetbrains.python.PyElementTypes;
 import com.jetbrains.python.PyTokenTypes;
 import com.jetbrains.python.parsing.ExpressionParsing;
 import com.jetbrains.python.parsing.ParsingContext;
-import com.jetbrains.python.psi.PyCallExpression;
 import com.jetbrains.python.psi.PyElementType;
-import com.sun.javafx.beans.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
 
 class PyxlExpressionParsing extends ExpressionParsing {
-    private static class PyxlParsingException extends Throwable {}
+    private static class PyxlParsingException extends Throwable {
+    }
 
     private static class Token {
         public final IElementType type;
@@ -27,7 +27,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
             this.text = text;
         }
 
-        @NonNull
+        @NotNull
         public String getTagName() {
             return String.format("%s", text);
         }
@@ -38,7 +38,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
 
         @Override
         public boolean equals(Object obj) {
-            if(obj instanceof Token) {
+            if (obj instanceof Token) {
                 Token other = (Token) obj;
                 return other.type.equals(type) && other.getTagName().equals(getTagName());
             }
@@ -153,6 +153,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
 
     /**
      * Parse the name of a pyxl tag, an if tag, or an else tag.
+     *
      * @return true if a tag name was parsed, or false otherwise.
      */
     private Token parsePyxlTagName(Token expectedToken) throws PyxlParsingException {
@@ -170,7 +171,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
             myBuilder.advanceLexer();
             tag.done(PyxlElementTypes.TAG_REFERENCE);
             fakeInitCall.done(PyElementTypes.CALL_EXPRESSION);
-        } else if (token == PyxlTokenTypes.BUILT_IN_TAG ) {
+        } else if (token == PyxlTokenTypes.BUILT_IN_TAG) {
             myBuilder.advanceLexer();
         } else {
             throw new PyxlParsingException();
@@ -178,6 +179,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
 
         return thisToken;
     }
+
     private Token parsePyxlTagName() throws PyxlParsingException {
         return parsePyxlTagName(null);
     }
@@ -188,10 +190,11 @@ class PyxlExpressionParsing extends ExpressionParsing {
      * is being parsed a parse error will be set. It is ok to call this
      * method whenever a embedded python expression could occur, even if
      * the lexer isn't currently ready to produce one.
+     *
      * @return true if an embedded expression was parsed, or false
      * otherwise.
      * @throws PyxlParsingException if an error occurs while the embedded
-     * expression is being parsed.
+     *                              expression is being parsed.
      */
     private boolean parsePyxlEmbed() throws PyxlParsingException {
         if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
@@ -242,6 +245,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
     /**
      * Parse a pyxl attribute value. If an error occurs while the attribute
      * value is being parsed a parse error will be set.
+     *
      * @return true if a value was successfully parsed and false
      * otherwise.
      */
