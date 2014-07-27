@@ -17,6 +17,8 @@ public class PyxlParsingTest extends ParsingTestCase {
         doTest(true);
     }
 
+    public void testcreate_dfb() { doTest(true); }
+
     public PyxlParsingTest() {
         super("", "py", new PyxlParserDefinition());
     }

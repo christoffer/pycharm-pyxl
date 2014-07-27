@@ -74,21 +74,18 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
 S = [\ \t\n]*
 PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
-PYXL_ATTR = {S}{PYXL_ATTRNAME}{S}"="{S}{PYXL_ATTRVALUE}{S}
-PYXL_TAG = "<" {PYXL_ATTRNAME}{S}{PYXL_ATTR}*(">"|"/>")
+PYXL_PRE_OP = [\=\(\[\{,\:\>]         // matching tokenizer.py in dropbox's pyxl parser
+PYXL_PRE_KEYWD = (print|else|yield|return)
+PYXL_TAG_COMING = ({PYXL_PRE_OP}|{PYXL_PRE_KEYWD}){S}"<"
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
 PYXL_COMMENT = "<!--" ([^\-]|(-[^\-])|(--[^>]))* "-->"
 
-// approximate matches (slightly optimistic - can match on some syntax errors) used for looking for tag.
-PYXL_ATTRVALUE_LITERAL = (\"|')({PYXL_ATTRVALUE_2Q}|{PYXL_ATTRVALUE_1Q}|{PYXL_PYTHON_EMBED}?)+(\"|')
-PYXL_ATTRVALUE = ({PYXL_ATTRVALUE_LITERAL}|(\{.*\}))
+// attribute value insides. Includes support for line-continuation both by keeping quotes open and using '\' marker
+//  at EOL. That seems strange but i've seen examples of both in our code.
+PYXL_ATTRVAL_UNQUOTED_CHAR=[^\"\'\`=\<\>{ \r\n]
+PYXL_ATTRVALUE_2Q = ([^\\\"{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
+PYXL_ATTRVALUE_1Q = ([^\\'{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
 
-// attribute value insides (different for single-quoted and double-quoted strings)
-PYXL_ATTRVALUE_2Q = ([^\\\"\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
-PYXL_ATTRVALUE_1Q = ([^\\'\r\n{]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?
-
-// a normal python embed (with no quotes)
-PYXL_PYTHON_EMBED = \{([^\\\r\n]|{ESCAPE_SEQUENCE}|(\\[\r\n]))*?\}
 // a string in a pyxl block, outside tags and quotes (can't contain {}  <> # etc)
 PYXL_BLOCK_STRING = ([^<{#])*?
 
@@ -96,10 +93,13 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 %state IN_PYXL_BLOCK
 %state IN_PYXL_TAG_NAME
 %state IN_PYXL_PYTHON_EMBED
-
+%state PENDING_PYXL_TAG_FROM_PYTHON
+%state PENDING_PYXL_TAG_FROM_PYXL
+%state ATTR_VALUE_UNQUOTED
 %state ATTR_VALUE_1Q
 %state ATTR_VALUE_2Q
 %state IN_ATTR
+%state IN_ATTRVALUE
 %state IN_CLOSE_TAG
 
 %{
@@ -169,14 +169,25 @@ return yylength()-s.length();
                                return PyTokenTypes.RBRACE;
                            }
                         }
-// remainder of python is defined below in the python states.
+    // remainder of python is defined below in the python states.
 }
 
+// look for pyxl tag starts in python contexts using a lookahead
+<IN_DOCSTRING_OWNER, IN_PYXL_DOCUMENT, IN_PYXL_PYTHON_EMBED> {
+    {PYXL_TAG_COMING} {
+        yypushback(yylength());
+        enterState(PENDING_PYXL_TAG_FROM_PYTHON);
+    }
+}
 
-<IN_PYXL_BLOCK, IN_DOCSTRING_OWNER, IN_PYXL_DOCUMENT, IN_PYXL_PYTHON_EMBED> {
-    {PYXL_TAG} {
-        enterState(IN_PYXL_TAG_NAME);
-        yypushback(yylength()-1);
+// look for pyxl tag starts in pyxl contexts
+<PENDING_PYXL_TAG_FROM_PYTHON, IN_PYXL_BLOCK> {
+    "<"    {
+        if (yystate() == PENDING_PYXL_TAG_FROM_PYTHON) {
+            yybegin(IN_PYXL_TAG_NAME);
+        } else {
+            enterState(IN_PYXL_TAG_NAME);
+        }
         return PyxlTokenTypes.TAGBEGIN;
     }
 }
@@ -189,7 +200,7 @@ return yylength()-s.length();
 .                     { return PyxlTokenTypes.BADCHAR; }
 }
 
-<IN_PYXL_BLOCK> {
+<IN_PYXL_BLOCK, PENDING_PYXL_TAG_FROM_PYXL> {
 {PYXL_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
 "{"                   { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 {PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
@@ -197,6 +208,12 @@ return yylength()-s.length();
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                       { return PyxlTokenTypes.BADCHAR; }
 
+}
+
+// HTML allows attribute values without quotes, if they conform to a limited set of characters.
+<ATTR_VALUE_UNQUOTED> {
+    {PYXL_ATTRVAL_UNQUOTED_CHAR}* { return PyxlTokenTypes.ATTRVALUE; }
+    . { exitState(); yypushback(1); return PyxlTokenTypes.ATTRVALUE_END; }
 }
 
 <ATTR_VALUE_1Q> {
@@ -214,14 +231,19 @@ return yylength()-s.length();
 
 }
 
+<IN_ATTRVALUE> { // parse an attribute value
+    "'" { yybegin(ATTR_VALUE_1Q); return PyxlTokenTypes.ATTRVALUE_START; }
+    "\"" { yybegin(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
+    {PYXL_ATTRVAL_UNQUOTED_CHAR} { yypushback(1); yybegin(ATTR_VALUE_UNQUOTED); return PyxlTokenTypes.ATTRVALUE_START; }
+    // python embed without quotes
+    "{"                 { yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
+    [^] { return PyxlTokenTypes.BADCHAR; }
+
+}
 <IN_ATTR> { // parse an attribute name and value
 {PYXL_ATTRNAME}       { return PyxlTokenTypes.ATTRNAME; }
-"="                   { return PyTokenTypes.EQ; }
-"'" { enterState(ATTR_VALUE_1Q); return PyxlTokenTypes.ATTRVALUE_START; }
-"\"" { enterState(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
+"="                   { enterState(IN_ATTRVALUE); return PyTokenTypes.EQ; }
 
-// python embed without quotes -- should we really return here after this? Or is only a single value possible?
-"{"                 { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
 ">"                 { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND;}
 "/>"                { return exitState() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {END_OF_LINE_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
@@ -290,12 +312,13 @@ return PyTokenTypes.DOCSTRING; }
 }
 
 [\n]                        { return PyTokenTypes.LINE_BREAK; }
-<YYINITIAL, IN_DOCSTRING_OWNER, PENDING_DOCSTRING, IN_PYXL_DOCUMENT> {
+
+// python states
+<YYINITIAL, IN_DOCSTRING_OWNER, IN_PYXL_PYTHON_EMBED, IN_PYXL_DOCUMENT, PENDING_PYXL_TAG_FROM_PYTHON> {
+
 // this rule was for ALL states in python; with Pyxl addition we have to limit it to  python states only.
 {END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
-}
 
-<YYINITIAL, IN_DOCSTRING_OWNER, IN_PYXL_PYTHON_EMBED, IN_PYXL_DOCUMENT> {
 {LONGINTEGER}         { return PyTokenTypes.INTEGER_LITERAL; }
 {INTEGER}             { return PyTokenTypes.INTEGER_LITERAL; }
 {FLOATNUMBER}         { return PyTokenTypes.FLOAT_LITERAL; }

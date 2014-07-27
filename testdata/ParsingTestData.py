@@ -5,8 +5,6 @@ def x_hi():
 
 def foo():
     yy = 20
-    <hi>
-    </hi>
     scaley = (yy<5) or (yy>100)
 
     return (
@@ -33,5 +31,22 @@ def zoo():
             </hi>
 
             <hi />
+        </hi>
+    )
+
+    return ( <select_option value=1>
+        One
+        </select_option>)
+
+def goo():
+    b = True
+    return (<hi
+        class="string over two lines without backslash
+        {'a' if b else ''}"
+        prop2="true" nohover="{True}"
+        zoo="string with backslash \
+            asdfjkl"
+        >
+        {5+5}
         </hi>
     )
