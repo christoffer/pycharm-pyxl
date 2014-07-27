@@ -349,6 +349,7 @@ return PyTokenTypes.DOCSTRING; }
 "not"                 { return PyTokenTypes.NOT_KEYWORD; }
 "or"                  { return PyTokenTypes.OR_KEYWORD; }
 "pass"                { return PyTokenTypes.PASS_KEYWORD; }
+"print"                { return PyTokenTypes.PRINT_KEYWORD; }
 "raise"               { return PyTokenTypes.RAISE_KEYWORD; }
 "return"              { return PyTokenTypes.RETURN_KEYWORD; }
 "try"                 { return PyTokenTypes.TRY_KEYWORD; }
