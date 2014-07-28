@@ -20,6 +20,11 @@ def foo():
         </hi>
     )
 
+def unparenthesized_multiline_expression():
+    return <hi
+        id="foo"
+        class="bar"
+    ></hi>
 
 def zoo():
     str = "abcdefg"
