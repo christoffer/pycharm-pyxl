@@ -121,7 +121,7 @@ private boolean exitState() {
     }
 }
 
-// Counter for keeping track of when an embed statment ends, as opposed to when inner braces closes.
+// Counter for keeping track of when an embed statement ends, as opposed to when inner braces closes.
 int embedBraceCount = 0;
 
 class State {
