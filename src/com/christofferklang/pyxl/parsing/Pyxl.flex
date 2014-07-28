@@ -212,8 +212,8 @@ return yylength()-s.length();
 
 // HTML allows attribute values without quotes, if they conform to a limited set of characters.
 <ATTR_VALUE_UNQUOTED> {
-    {PYXL_ATTRVAL_UNQUOTED_CHAR}* { return PyxlTokenTypes.ATTRVALUE; }
-    . { exitState(); yypushback(1); return PyxlTokenTypes.ATTRVALUE_END; }
+    {PYXL_ATTRVAL_UNQUOTED_CHAR}* { exitState(); return PyxlTokenTypes.ATTRVALUE; }
+    . { return PyxlTokenTypes.BADCHAR;}
 }
 
 <ATTR_VALUE_1Q> {
@@ -234,7 +234,7 @@ return yylength()-s.length();
 <IN_ATTRVALUE> { // parse an attribute value
     "'" { yybegin(ATTR_VALUE_1Q); return PyxlTokenTypes.ATTRVALUE_START; }
     "\"" { yybegin(ATTR_VALUE_2Q); return PyxlTokenTypes.ATTRVALUE_START; }
-    {PYXL_ATTRVAL_UNQUOTED_CHAR} { yypushback(1); yybegin(ATTR_VALUE_UNQUOTED); return PyxlTokenTypes.ATTRVALUE_START; }
+    {PYXL_ATTRVAL_UNQUOTED_CHAR} { yypushback(1); yybegin(ATTR_VALUE_UNQUOTED); }
     // python embed without quotes
     "{"                 { yybegin(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
     [^] { return PyxlTokenTypes.BADCHAR; }
