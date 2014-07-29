@@ -1,21 +1,22 @@
 <idea-plugin version="2">
     <id>com.christofferklang.pyxl</id>
     <name>Pyxl Support</name>
-    <version>1.0-beta</version>
+    <version>1.0-beta-2</version>
     <vendor email="christoffer.klang@gmail.com">Christoffer Klang</vendor>
 
     <description><![CDATA[
       Adds support for <a href="https://github.com/dropbox/pyxl">Pyxl</a> files.
-
+      <br/>
       Created by Nils Bunger (nils@dropbox.com), Robert Kajic (kajic@dropbox.com) and Christoffer Klang (christoffer@dropbox.com).
-
+      <br/>
       Please report any bugs or missing features to https://github.com/christoffer/pycharm-pyxl, or email any of the creators.
-
+      <br/>
       Requires PyCharm or the Python plugin.
     ]]></description>
 
     <change-notes><![CDATA[
       First release with basic support for Pyxl.
+      - Bug fixes from first beta version.
     ]]>
     </change-notes>
 
