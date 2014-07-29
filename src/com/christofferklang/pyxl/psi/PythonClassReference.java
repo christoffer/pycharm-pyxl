@@ -14,7 +14,7 @@ import java.util.Set;
 public class PythonClassReference extends PyReferenceExpressionImpl {
     private static final Set<String> EMPTY_HASH_SET = new HashSet<String>();
 
-    private Set<String> mCachedSpecialPyxlTagNames = null;
+    private static Set<String> mCachedSpecialPyxlTagNames = null;
 
     public PythonClassReference(ASTNode astNode) {
         super(astNode);
