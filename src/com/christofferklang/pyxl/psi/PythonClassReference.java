@@ -65,13 +65,13 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
         return mCachedSpecialPyxlTagNames == null ? EMPTY_HASH_SET : mCachedSpecialPyxlTagNames;
     }
 
+    /** Try and a find an import statment such as "from mymodule.pyxl import html" */
     private PyImportElement getImportedPyxlHtmlModuleElement() {
         if (!(getContainingFile() instanceof PyFile)) return null; // not a python file
 
         List<PyFromImportStatement> imports = ((PyFile) getContainingFile()).getFromImports();
 
         for (PyFromImportStatement importStatement : imports) {
-            QualifiedName qualifiedImportName = importStatement.getImportSourceQName();
             // check for import statements that import from a "pyxl" package
             if (hasLastComponent("pyxl", importStatement.getImportSourceQName())) {
                 // check only for imports of the module "html"
