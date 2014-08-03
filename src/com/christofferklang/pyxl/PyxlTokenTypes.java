@@ -14,6 +14,7 @@ public class PyxlTokenTypes {
     public static final PyElementType ATTRVALUE_END = new PyElementType("PYXL ATTRVALUE END");
 
     public static final PyElementType TAGBEGIN = new PyElementType("PYXL TAGBEGIN <");
+    public static final PyElementType TAGNAME_MODULE = new PyElementType("PYXL TAGNAME_MODULE");
     public static final PyElementType TAGNAME = new PyElementType("PYXL TAGNAME");
     public static final PyElementType TAGEND = new PyElementType("PYXL TAGEND >");
     public static final PyElementType TAGCLOSE = new PyElementType("PYXL TAGCLOSE </");
