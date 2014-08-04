@@ -113,7 +113,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
             myBuilder.advanceLexer();
 
             try {
-                parseQualifiedPyxlTagName(qualifiedName);
+                parseQualifiedPyxlTagName(qualifiedName, null, null);
             } catch (PyxlParsingException e) {
                 pyxl.done(PyxlElementTypes.TAG);
                 myBuilder.error(String.format("pyxl expected closing tag: </%s>", qualifiedName));
@@ -135,31 +135,37 @@ class PyxlExpressionParsing extends ExpressionParsing {
      * @return the full qualified name (e.g. "module1.module2.tag")
      * @throws PyxlParsingException if @requiredQualifiedName is non-null and doesn't match the parsed qualified name.
      */
-    private String parseQualifiedPyxlTagName(String requiredQualifiedName) throws PyxlParsingException {
+    private String parseQualifiedPyxlTagName(String requiredQualifiedName,
+                                             PsiBuilder.Marker callExpressionMarker,
+                                             PsiBuilder.Marker tagStartMarker) throws PyxlParsingException {
         final IElementType token = myBuilder.getTokenType();
 
         String fullQualifiedName = myBuilder.getTokenText();
 
         // Module qualifiers are straight up python identifiers followed by a dot
-        if (token == PyTokenTypes.IDENTIFIER) {
+        if (token == PyxlTokenTypes.TAGNAME_MODULE) {
+            if(callExpressionMarker == null) callExpressionMarker = myBuilder.mark();
+            if(tagStartMarker == null) tagStartMarker = myBuilder.mark();
             PsiBuilder.Marker moduleExpression = myBuilder.mark();
             myBuilder.advanceLexer();
-            moduleExpression.done(PyElementTypes.REFERENCE_EXPRESSION);
+            moduleExpression.done(PyxlElementTypes.MODULE_REFERENCE);
             if (myBuilder.getTokenType() != PyTokenTypes.DOT) {
                 throw new PyxlParsingException();
             } else {
                 myBuilder.advanceLexer();
             }
-            fullQualifiedName = fullQualifiedName + "." + parseQualifiedPyxlTagName();
+            fullQualifiedName = fullQualifiedName + "." +
+                    parseQualifiedPyxlTagName(null, callExpressionMarker, tagStartMarker);
         } else if (token == PyxlTokenTypes.TAGNAME) {
             // pyxl expands <p><c /></p> to x_p()(x_c());
             // so in order to get the same semantics as the corresponding python would have, we fake a call to the init
             // function of the pyxl tag class here.
-            final PsiBuilder.Marker fakeInitCall = myBuilder.mark();
-            final PsiBuilder.Marker tag = myBuilder.mark();
+
+            if(callExpressionMarker == null) callExpressionMarker = myBuilder.mark();
+            if(tagStartMarker == null) tagStartMarker = myBuilder.mark();
             myBuilder.advanceLexer();
-            tag.done(PyxlElementTypes.TAG_REFERENCE);
-            fakeInitCall.done(PyElementTypes.CALL_EXPRESSION);
+            tagStartMarker.done(PyxlElementTypes.TAG_REFERENCE);
+            callExpressionMarker.done(PyElementTypes.CALL_EXPRESSION);
         } else if (token == PyxlTokenTypes.BUILT_IN_TAG) {
             myBuilder.advanceLexer();
         } else {
@@ -173,27 +179,23 @@ class PyxlExpressionParsing extends ExpressionParsing {
         return fullQualifiedName;
     }
 
-    /**
-     * Parses a pyxl tag without a restriction on what the full qualified expression must be
-     *
-     * @return the full qualified name (e.g. "module1.module2.tag"
-     */
     private String parseQualifiedPyxlTagName() throws PyxlParsingException {
-        return parseQualifiedPyxlTagName(null);
+        return parseQualifiedPyxlTagName(null, null, null);
     }
 
-    /**
-     * Attempt to parse an embedded python expression. For example:
-     * {self.counter + 1}. If an error occurs while the embedded expression
-     * is being parsed a parse error will be set. It is ok to call this
-     * method whenever a embedded python expression could occur, even if
-     * the lexer isn't currently ready to produce one.
-     *
-     * @return true if an embedded expression was parsed, or false
-     * otherwise.
-     * @throws PyxlParsingException if an error occurs while the embedded
-     *                              expression is being parsed.
-     */
+
+        /**
+         * Attempt to parse an embedded python expression. For example:
+         * {self.counter + 1}. If an error occurs while the embedded expression
+         * is being parsed a parse error will be set. It is ok to call this
+         * method whenever a embedded python expression could occur, even if
+         * the lexer isn't currently ready to produce one.
+         *
+         * @return true if an embedded expression was parsed, or false
+         * otherwise.
+         * @throws PyxlParsingException if an error occurs while the embedded
+         *                              expression is being parsed.
+         */
     private boolean parsePyxlEmbed() throws PyxlParsingException {
         if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
             myBuilder.advanceLexer();

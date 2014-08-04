@@ -16,4 +16,6 @@ public class PyxlElementTypes {
 
     public static IElementType ARGUMENT_LIST =
             new PyElementType("PYXL_ARGUMENT_LIST", PyxlArgumentList.class);
+
+    public static IElementType MODULE_REFERENCE = new PyElementType("MODULE_REFERENCE", PyxlModuleReference.class);
 }

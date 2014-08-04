@@ -196,7 +196,7 @@ return yylength()-s.length();
 <IN_CLOSE_TAG> {
 "if" { return PyxlTokenTypes.BUILT_IN_TAG; }
 "else" { return PyxlTokenTypes.BUILT_IN_TAG; }
-{IDENTIFIER}"."       { yypushback(1); return PyTokenTypes.IDENTIFIER; }
+{IDENTIFIER}"."       { yypushback(1); return PyxlTokenTypes.TAGNAME_MODULE; }
 {PYXL_TAGNAME}        { return PyxlTokenTypes.TAGNAME; }
 ">"                   { return exitState() ? PyxlTokenTypes.TAGEND : PyxlTokenTypes.BADCHAR; }
 "."                   { return PyTokenTypes.DOT; }
@@ -257,7 +257,7 @@ return yylength()-s.length();
 //">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
 "if" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
 "else" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
-{IDENTIFIER}"."      { yypushback(1); return PyTokenTypes.IDENTIFIER; }
+{IDENTIFIER}"."      { yypushback(1); return PyxlTokenTypes.TAGNAME_MODULE; }
 {PYXL_TAGNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
 "."                  { return PyTokenTypes.DOT; }
 .                       { return PyxlTokenTypes.BADCHAR; }

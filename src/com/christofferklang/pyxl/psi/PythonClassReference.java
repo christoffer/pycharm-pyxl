@@ -5,6 +5,9 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.QualifiedName;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyReferenceExpressionImpl;
+import com.jetbrains.python.psi.types.PyType;
+import com.jetbrains.python.psi.types.TypeEvalContext;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -95,6 +98,13 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     }
 
     private String pyxlClassName(String tagName) {
+        if(tagName.indexOf(".") > 0) {
+            // tag contains a module reference like: <module.pyxl_class>
+            final StringBuilder qualifiedTagName = new StringBuilder(tagName);
+            final int offset = qualifiedTagName.lastIndexOf(".");
+            tagName = qualifiedTagName.subSequence(offset + 1, qualifiedTagName.length()).toString();
+            return "x_" + tagName;
+        }
         return "x_" + tagName;
     }
 
@@ -102,6 +112,4 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     public String toString() {
         return "PyClassTagReference: " + getReferencedName();
     }
-
-
 }

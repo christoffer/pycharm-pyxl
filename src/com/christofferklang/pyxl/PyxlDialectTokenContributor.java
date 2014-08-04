@@ -15,7 +15,7 @@ public class PyxlDialectTokenContributor implements PythonDialectsTokenSetContri
     @NotNull
     @Override
     public TokenSet getExpressionTokens() {
-        return TokenSet.create(PyxlElementTypes.TAG);
+        return TokenSet.create(PyxlElementTypes.TAG, PyxlElementTypes.MODULE_REFERENCE);
     }
 
     @NotNull
