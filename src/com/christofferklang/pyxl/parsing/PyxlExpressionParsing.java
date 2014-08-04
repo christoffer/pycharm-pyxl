@@ -9,40 +9,18 @@ import com.jetbrains.python.PyTokenTypes;
 import com.jetbrains.python.parsing.ExpressionParsing;
 import com.jetbrains.python.parsing.ParsingContext;
 import com.jetbrains.python.psi.PyElementType;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
 
 class PyxlExpressionParsing extends ExpressionParsing {
     private static class PyxlParsingException extends Throwable {
-    }
-
-    private static class Token {
-        public final IElementType type;
-        public final String text;
-
-        public Token(IElementType type, String text) {
-            this.type = type;
-            this.text = text;
+        public PyxlParsingException() {
+            super();
         }
 
-        @NotNull
-        public String getTagName() {
-            return String.format("%s", text);
-        }
-
-        public String toString() {
-            return String.format("%s: %s", type, text);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj instanceof Token) {
-                Token other = (Token) obj;
-                return other.type.equals(type) && other.getTagName().equals(getTagName());
-            }
-            return false;
+        public PyxlParsingException(String message) {
+            super(message);
         }
     }
 
@@ -72,11 +50,11 @@ class PyxlExpressionParsing extends ExpressionParsing {
         final PsiBuilder.Marker pyxl = myBuilder.mark();
         myBuilder.advanceLexer();
 
-        Token startToken;
+        String qualifiedName;
         try {
-            startToken = parsePyxlTagName();
+            qualifiedName = parseQualifiedPyxlTagName();
         } catch (PyxlParsingException e) {
-            myBuilder.error("pyxl expected starting tag");
+            myBuilder.error(e.getMessage());
             pyxl.done(PyxlElementTypes.TAG);
             return;
         }
@@ -135,10 +113,10 @@ class PyxlExpressionParsing extends ExpressionParsing {
             myBuilder.advanceLexer();
 
             try {
-                parsePyxlTagName(startToken);
+                parseQualifiedPyxlTagName(qualifiedName);
             } catch (PyxlParsingException e) {
                 pyxl.done(PyxlElementTypes.TAG);
-                myBuilder.error(String.format("pyxl expected closing tag: </%s>", startToken.getTagName()));
+                myBuilder.error(String.format("pyxl expected closing tag: </%s>", qualifiedName));
                 return;
             }
 
@@ -152,20 +130,31 @@ class PyxlExpressionParsing extends ExpressionParsing {
     }
 
     /**
-     * Parse the name of a pyxl tag, an if tag, or an else tag.
+     * Parses a pyxl tag name, including an optional list of module qualifiers.
      *
-     * @return true if a tag name was parsed, or false otherwise.
+     * @return the full qualified name (e.g. "module1.module2.tag")
+     * @throws PyxlParsingException if @requiredQualifiedName is non-null and doesn't match the parsed qualified name.
      */
-    private Token parsePyxlTagName(Token expectedToken) throws PyxlParsingException {
+    private String parseQualifiedPyxlTagName(String requiredQualifiedName) throws PyxlParsingException {
         final IElementType token = myBuilder.getTokenType();
-        final String text = myBuilder.getTokenText();
-        Token thisToken = new Token(token, text);
 
-        if (expectedToken != null && !thisToken.equals(expectedToken)) {
-            throw new PyxlParsingException();
-        }
+        String fullQualifiedName = myBuilder.getTokenText();
 
-        if (token == PyxlTokenTypes.TAGNAME) {
+        // Module qualifiers are straight up python identifiers followed by a dot
+        if (token == PyTokenTypes.IDENTIFIER) {
+            PsiBuilder.Marker moduleExpression = myBuilder.mark();
+            myBuilder.advanceLexer();
+            moduleExpression.done(PyElementTypes.REFERENCE_EXPRESSION);
+            if (myBuilder.getTokenType() != PyTokenTypes.DOT) {
+                throw new PyxlParsingException();
+            } else {
+                myBuilder.advanceLexer();
+            }
+            fullQualifiedName = fullQualifiedName + "." + parseQualifiedPyxlTagName();
+        } else if (token == PyxlTokenTypes.TAGNAME) {
+            // pyxl expands <p><c /></p> to x_p()(x_c());
+            // so in order to get the same semantics as the corresponding python would have, we fake a call to the init
+            // function of the pyxl tag class here.
             final PsiBuilder.Marker fakeInitCall = myBuilder.mark();
             final PsiBuilder.Marker tag = myBuilder.mark();
             myBuilder.advanceLexer();
@@ -177,11 +166,20 @@ class PyxlExpressionParsing extends ExpressionParsing {
             throw new PyxlParsingException();
         }
 
-        return thisToken;
+        if (requiredQualifiedName != null && !requiredQualifiedName.equals(fullQualifiedName)) {
+            throw new PyxlParsingException("expected starting tag " + requiredQualifiedName);
+        }
+
+        return fullQualifiedName;
     }
 
-    private Token parsePyxlTagName() throws PyxlParsingException {
-        return parsePyxlTagName(null);
+    /**
+     * Parses a pyxl tag without a restriction on what the full qualified expression must be
+     *
+     * @return the full qualified name (e.g. "module1.module2.tag"
+     */
+    private String parseQualifiedPyxlTagName() throws PyxlParsingException {
+        return parseQualifiedPyxlTagName(null);
     }
 
     /**
@@ -225,7 +223,6 @@ class PyxlExpressionParsing extends ExpressionParsing {
                 myBuilder.advanceLexer();
                 if (parsePyxlAttributeValue()) {
                     attr.done(PyElementTypes.KEYWORD_ARGUMENT_EXPRESSION);
-
                     // Parse the next attribute="value" pair.
                     continue;
                 } else {
