@@ -144,8 +144,8 @@ class PyxlExpressionParsing extends ExpressionParsing {
 
         // Module qualifiers are straight up python identifiers followed by a dot
         if (token == PyxlTokenTypes.TAGNAME_MODULE) {
-            if(callExpressionMarker == null) callExpressionMarker = myBuilder.mark();
-            if(tagStartMarker == null) tagStartMarker = myBuilder.mark();
+            if (callExpressionMarker == null) callExpressionMarker = myBuilder.mark();
+            if (tagStartMarker == null) tagStartMarker = myBuilder.mark();
             PsiBuilder.Marker moduleExpression = myBuilder.mark();
             myBuilder.advanceLexer();
             moduleExpression.done(PyxlElementTypes.MODULE_REFERENCE);
@@ -161,8 +161,8 @@ class PyxlExpressionParsing extends ExpressionParsing {
             // so in order to get the same semantics as the corresponding python would have, we fake a call to the init
             // function of the pyxl tag class here.
 
-            if(callExpressionMarker == null) callExpressionMarker = myBuilder.mark();
-            if(tagStartMarker == null) tagStartMarker = myBuilder.mark();
+            if (callExpressionMarker == null) callExpressionMarker = myBuilder.mark();
+            if (tagStartMarker == null) tagStartMarker = myBuilder.mark();
             myBuilder.advanceLexer();
             tagStartMarker.done(PyxlElementTypes.TAG_REFERENCE);
             callExpressionMarker.done(PyElementTypes.CALL_EXPRESSION);
@@ -184,18 +184,18 @@ class PyxlExpressionParsing extends ExpressionParsing {
     }
 
 
-        /**
-         * Attempt to parse an embedded python expression. For example:
-         * {self.counter + 1}. If an error occurs while the embedded expression
-         * is being parsed a parse error will be set. It is ok to call this
-         * method whenever a embedded python expression could occur, even if
-         * the lexer isn't currently ready to produce one.
-         *
-         * @return true if an embedded expression was parsed, or false
-         * otherwise.
-         * @throws PyxlParsingException if an error occurs while the embedded
-         *                              expression is being parsed.
-         */
+    /**
+     * Attempt to parse an embedded python expression. For example:
+     * {self.counter + 1}. If an error occurs while the embedded expression
+     * is being parsed a parse error will be set. It is ok to call this
+     * method whenever a embedded python expression could occur, even if
+     * the lexer isn't currently ready to produce one.
+     *
+     * @return true if an embedded expression was parsed, or false
+     * otherwise.
+     * @throws PyxlParsingException if an error occurs while the embedded
+     *                              expression is being parsed.
+     */
     private boolean parsePyxlEmbed() throws PyxlParsingException {
         if (myBuilder.getTokenType() == PyxlTokenTypes.EMBED_START) {
             myBuilder.advanceLexer();

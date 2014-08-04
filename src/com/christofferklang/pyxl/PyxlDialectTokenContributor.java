@@ -1,6 +1,5 @@
 package com.christofferklang.pyxl;
 
-import com.christofferklang.pyxl.psi.PyxlTag;
 import com.intellij.psi.tree.TokenSet;
 import com.jetbrains.python.PythonDialectsTokenSetContributor;
 import org.jetbrains.annotations.NotNull;
