@@ -65,13 +65,15 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
         return mCachedSpecialPyxlTagNames == null ? EMPTY_HASH_SET : mCachedSpecialPyxlTagNames;
     }
 
+    /**
+     * Try and a find an import statment such as "from mymodule.pyxl import html"
+     */
     private PyImportElement getImportedPyxlHtmlModuleElement() {
         if (!(getContainingFile() instanceof PyFile)) return null; // not a python file
 
         List<PyFromImportStatement> imports = ((PyFile) getContainingFile()).getFromImports();
 
         for (PyFromImportStatement importStatement : imports) {
-            QualifiedName qualifiedImportName = importStatement.getImportSourceQName();
             // check for import statements that import from a "pyxl" package
             if (hasLastComponent("pyxl", importStatement.getImportSourceQName())) {
                 // check only for imports of the module "html"
@@ -95,6 +97,13 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     }
 
     private String pyxlClassName(String tagName) {
+        if (tagName.indexOf(".") > 0) {
+            // tag contains a module reference like: <module.pyxl_class>
+            final StringBuilder qualifiedTagName = new StringBuilder(tagName);
+            final int offset = qualifiedTagName.lastIndexOf(".");
+            tagName = qualifiedTagName.subSequence(offset + 1, qualifiedTagName.length()).toString();
+            return "x_" + tagName;
+        }
         return "x_" + tagName;
     }
 
@@ -102,6 +111,4 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     public String toString() {
         return "PyClassTagReference: " + getReferencedName();
     }
-
-
 }

@@ -1,6 +1,5 @@
 package com.christofferklang.pyxl;
 
-import com.christofferklang.pyxl.psi.PyxlTag;
 import com.intellij.psi.tree.TokenSet;
 import com.jetbrains.python.PythonDialectsTokenSetContributor;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +14,7 @@ public class PyxlDialectTokenContributor implements PythonDialectsTokenSetContri
     @NotNull
     @Override
     public TokenSet getExpressionTokens() {
-        return TokenSet.create(PyxlElementTypes.TAG);
+        return TokenSet.create(PyxlElementTypes.TAG, PyxlElementTypes.MODULE_REFERENCE);
     }
 
     @NotNull

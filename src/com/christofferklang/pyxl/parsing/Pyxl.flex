@@ -73,11 +73,12 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
 
 S = [\ \t\n]*
-PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]** // tag name and attr-name matcher. Supports dashes, which makes it diff than IDENTIFIER
+PYXL_TAGNAME = {IDENT_START}[a-zA-Z0-9_]**
+PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]**
 PYXL_PRE_OP = [\=\(\[\{,\:\>]         // matching tokenizer.py in dropbox's pyxl parser
 PYXL_PRE_KEYWD = (print|else|yield|return)
 PYXL_TAG_COMING = ({PYXL_PRE_OP}|{PYXL_PRE_KEYWD}){S}"<"
-PYXL_TAGCLOSE = "</" ({IDENTIFIER}) ">"
+PYXL_TAGCLOSE = "</" ({IDENTIFIER}".")*{PYXL_TAGNAME} ">"
 PYXL_COMMENT = "<!--" ([^\-]|(-[^\-])|(--[^>]))* "-->"
 
 // attribute value insides. Includes support for line-continuation both by keeping quotes open and using '\' marker
@@ -195,8 +196,10 @@ return yylength()-s.length();
 <IN_CLOSE_TAG> {
 "if" { return PyxlTokenTypes.BUILT_IN_TAG; }
 "else" { return PyxlTokenTypes.BUILT_IN_TAG; }
-{PYXL_ATTRNAME}       { return PyxlTokenTypes.TAGNAME; }
+{IDENTIFIER}"."       { yypushback(1); return PyxlTokenTypes.TAGNAME_MODULE; }
+{PYXL_TAGNAME}        { return PyxlTokenTypes.TAGNAME; }
 ">"                   { return exitState() ? PyxlTokenTypes.TAGEND : PyxlTokenTypes.BADCHAR; }
+"."                   { return PyTokenTypes.DOT; }
 .                     { return PyxlTokenTypes.BADCHAR; }
 }
 
@@ -254,10 +257,10 @@ return yylength()-s.length();
 //">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
 "if" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
 "else" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
-
-{PYXL_ATTRNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
+{IDENTIFIER}"."      { yypushback(1); return PyxlTokenTypes.TAGNAME_MODULE; }
+{PYXL_TAGNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
+"."                  { return PyTokenTypes.DOT; }
 .                       { return PyxlTokenTypes.BADCHAR; }
-
 }
 
 <IN_DOCSTRING_OWNER> {
