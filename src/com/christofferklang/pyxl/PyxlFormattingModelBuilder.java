@@ -10,7 +10,6 @@ public class PyxlFormattingModelBuilder extends PythonFormattingModelBuilder {
 
     public PyxlFormattingModelBuilder() {
         super();
-        System.out.println("Pyxl Formatting Model Builder");
     }
 
 

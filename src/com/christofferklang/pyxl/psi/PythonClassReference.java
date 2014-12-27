@@ -204,12 +204,9 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
         if(sHtmlImportCache.containsKey(cacheKey)) {
             PyImportElement importElement = sHtmlImportCache.get(cacheKey);
             if(importElement != null) {
-                System.out.println("Cache hit: " + cacheKey);
                 return importElement;
             }
         }
-
-        System.out.println("Cache miss: " + cacheKey);
 
         List<PyFromImportStatement> imports = pyFile.getFromImports();
 
