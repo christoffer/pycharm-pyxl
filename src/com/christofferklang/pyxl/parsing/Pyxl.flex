@@ -13,7 +13,7 @@ import com.intellij.psi.tree.IElementType;
 
 %%
 // %debug uncomment for verbose output from the lexer
-%class PyxlLexer
+%class _PyxlLexer
 %implements FlexLexer
 %unicode
 %function advance
@@ -357,7 +357,6 @@ return PyTokenTypes.DOCSTRING; }
 "return"              { return PyTokenTypes.RETURN_KEYWORD; }
 "try"                 { return PyTokenTypes.TRY_KEYWORD; }
 "while"               { return PyTokenTypes.WHILE_KEYWORD; }
-"with"                { return PyTokenTypes.WHILE_KEYWORD; }
 "yield"               { return PyTokenTypes.YIELD_KEYWORD; }
 
 {IDENTIFIER}          { return PyTokenTypes.IDENTIFIER; }

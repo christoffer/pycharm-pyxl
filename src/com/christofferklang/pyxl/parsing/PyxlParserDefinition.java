@@ -30,10 +30,4 @@ public class PyxlParserDefinition extends PythonParserDefinition {
     public TokenSet getStringLiteralElements() {
         return TokenSet.orSet(super.getStringLiteralElements(), TokenSet.create(PyxlTokenTypes.STRING));
     }
-
-    private class PyxlIndentingLexer extends PythonIndentingProcessor {
-        public PyxlIndentingLexer() {
-            super(new PyxlLexer((Reader) null), TokenSet.EMPTY);
-        }
-    }
 }
