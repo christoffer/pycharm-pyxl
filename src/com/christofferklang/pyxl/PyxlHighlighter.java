@@ -1,6 +1,6 @@
 package com.christofferklang.pyxl;
 
-import com.christofferklang.pyxl.parsing.PyxlLexerAdapter;
+import com.christofferklang.pyxl.parsing.PyxlHighlightingLexer;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterBase;
@@ -15,15 +15,17 @@ import java.util.Map;
 class PyxlHighlighter extends PyHighlighter {
     private static final Map<IElementType, TextAttributesKey> keys1;
     private static final Map<IElementType, TextAttributesKey> keys2;
+    private final LanguageLevel myLanguageLevel;
 
     public PyxlHighlighter(LanguageLevel languageLevel) {
         super(languageLevel);
+        myLanguageLevel = languageLevel;
     }
 
     @NotNull
     @Override
     public Lexer getHighlightingLexer() {
-        return new PyxlLexerAdapter();
+        return new PyxlHighlightingLexer(myLanguageLevel);
     }
 
     static {

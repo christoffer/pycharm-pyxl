@@ -32,15 +32,12 @@ class PyxlExpressionParsing extends ExpressionParsing {
     }
 
     public boolean parsePrimaryExpression(boolean isTargetExpression) {
-        boolean match = super.parsePrimaryExpression(isTargetExpression);
-        if (!match) {
-            //noinspection SuspiciousMethodCalls
-            if (myBuilder.getTokenType() == PyxlTokenTypes.TAGBEGIN) {
-                parsePyxlTag();
-                return true;
-            }
+        if (myBuilder.getTokenType() == PyxlTokenTypes.TAGBEGIN) {
+            parsePyxlTag();
+            return true;
+        } else {
+            return super.parsePrimaryExpression(isTargetExpression);
         }
-        return match;
     }
 
     /**

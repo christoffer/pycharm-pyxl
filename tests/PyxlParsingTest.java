@@ -5,19 +5,34 @@ import com.jetbrains.python.PythonDialectsTokenSetContributor;
 import com.jetbrains.python.PythonTokenSetContributor;
 
 public class PyxlParsingTest extends ParsingTestCase {
+    /**
+     * These tests work like this:
+     * - They look at the name of the method, without the test-part to
+     * figure out which files to use under testdata.
+     *
+     * I.e. adding a method called testMyTest() { doTest(true); } here
+     * will run the file "testdata/MyTest.py" through the parser and expect the output
+     * from that run to match the PSI tree decribed in "testdata/MyTest.txt".
+     *
+     * If the text file is not there on the first run of the test, one will be created
+     * with the _current_ parser definition.
+     */
 
-    // Add each new test here as a method, and the corresponding .py file in testdata/ folder.
     public void testParsingTestData() {
         doTest(true);
     }
+
     public void testnestedembed() {
         doTest(true);
     }
+
     public void testclass_self_ref() {
         doTest(true);
     }
 
-    public void testcreate_dfb() { doTest(true); }
+    public void testWithStatements() {
+        doTest(true);
+    }
 
     public PyxlParsingTest() {
         super("", "py", new PyxlParserDefinition());

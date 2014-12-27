@@ -13,7 +13,7 @@ import com.intellij.psi.tree.IElementType;
 
 %%
 // %debug uncomment for verbose output from the lexer
-%class PyxlLexer
+%class _PyxlLexer
 %implements FlexLexer
 %unicode
 %function advance
@@ -105,7 +105,7 @@ PYXL_BLOCK_STRING = ([^<{#])*?
 
 %{
 private void enterState(int state) {
-    stateStack.push(new State(yystate(), embedBraceCount));
+    stateStack.push(new State(zzLexicalState, embedBraceCount));
     yybegin(state);
     embedBraceCount = 0;
 }
@@ -184,7 +184,7 @@ return yylength()-s.length();
 // look for pyxl tag starts in pyxl contexts
 <PENDING_PYXL_TAG_FROM_PYTHON, IN_PYXL_BLOCK> {
     "<"    {
-        if (yystate() == PENDING_PYXL_TAG_FROM_PYTHON) {
+        if (zzLexicalState == PENDING_PYXL_TAG_FROM_PYTHON) {
             yybegin(IN_PYXL_TAG_NAME);
         } else {
             enterState(IN_PYXL_TAG_NAME);
@@ -260,7 +260,7 @@ return yylength()-s.length();
 {IDENTIFIER}"."      { yypushback(1); return PyxlTokenTypes.TAGNAME_MODULE; }
 {PYXL_TAGNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
 "."                  { return PyTokenTypes.DOT; }
-.                       { return PyxlTokenTypes.BADCHAR; }
+.                    { return PyxlTokenTypes.BADCHAR; }
 }
 
 <IN_DOCSTRING_OWNER> {
@@ -357,7 +357,6 @@ return PyTokenTypes.DOCSTRING; }
 "return"              { return PyTokenTypes.RETURN_KEYWORD; }
 "try"                 { return PyTokenTypes.TRY_KEYWORD; }
 "while"               { return PyTokenTypes.WHILE_KEYWORD; }
-"with"                { return PyTokenTypes.WHILE_KEYWORD; }
 "yield"               { return PyTokenTypes.YIELD_KEYWORD; }
 
 {IDENTIFIER}          { return PyTokenTypes.IDENTIFIER; }

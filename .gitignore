@@ -2,5 +2,5 @@ out/
 .idea
 *.iml
 .DS_Store
-src/com/christofferklang/pyxl/PyxlLexer.java~
+src/com/christofferklang/pyxl/parsing/_PyxlLexer.java
 *.java~
