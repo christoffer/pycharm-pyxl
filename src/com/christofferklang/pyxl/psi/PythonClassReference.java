@@ -5,6 +5,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.QualifiedName;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyReferenceExpressionImpl;
+import com.jetbrains.python.psi.types.PyClassLikeType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -58,6 +59,19 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
                 //noinspection ConstantConditions
                 for (PyClass topLevelClass : htmlModule.getTopLevelClasses()) {
                     mCachedSpecialPyxlTagNames.add(topLevelClass.getName());
+                }
+
+                // Consider transient classes in the top level scope as well
+                for (PyFromImportStatement importStatement : htmlModule.getFromImports()) {
+                    for(PyImportElement importElement : importStatement.getImportElements()) {
+                        final String visibleName = importElement.getVisibleName();
+                        if(visibleName != null && visibleName.startsWith("x_")) {
+                            // Just swallowing all import classes starting with
+                            // x_ isn't *technically* correct (any class can be named x_), but
+                            // definitely good enough for our purposes.
+                            mCachedSpecialPyxlTagNames.add(importElement.getVisibleName());
+                        }
+                    }
                 }
             }
         }
