@@ -80,6 +80,8 @@ PYXL_PRE_KEYWD = (print|else|yield|return)
 PYXL_TAG_COMING = ({PYXL_PRE_OP}|{PYXL_PRE_KEYWD}){S}"<"
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}".")*{PYXL_TAGNAME} ">"
 PYXL_COMMENT = "<!--" ([^\-]|(-[^\-])|(--[^>]))* "-->"
+PYXL_DOCTYPE = "<!DOCTYPE" ([^>])* ">"
+PYXL_CDATA = "<![CDATA[" ([^\]]|(][^\]])|(]][^>]))* "]]>"
 
 // attribute value insides. Includes support for line-continuation both by keeping quotes open and using '\' marker
 //  at EOL. That seems strange but i've seen examples of both in our code.
@@ -204,13 +206,31 @@ return yylength()-s.length();
 }
 
 <IN_PYXL_BLOCK, PENDING_PYXL_TAG_FROM_PYXL> {
-{PYXL_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
+// TODO(christoffer) Proper handling of inner Python code
+// In the interest of keeping the Lexer simple; I've taken a little shortcut for
+// comments, doctypes and cdata in that I don't consider the case where inner Python code can
+// contain the end delimiter, as this is likely to be an edge case.
+//
+// Here's how Pyxl behaves with Python sections containing the end delimiter inside them:
+//
+// <!DOCTYPE {">"}> (output: `<!DOCTYPE >`, Python is ignored)
+// <![CDATA[{"]]>"}]]> (output: `]]&gt;<![CDATA[]]>`, the Python is output *before* the CDATA?)
+// <!--{"-->"}--> (output: ``, Python is ignored)
+//
+// We don't need a Python state for the inner Python code for DOCTYPE and COMMENT since it's
+// ignored anyway (it's not even executed), and since the Python behavior looks a bit undefined
+// for the CDATA case, I'm betting it's safe to ignore Python handling in there as well.
+//
+// Note however that the lexer currently will prematurely end the state in each
+// of the above examples.
+{PYXL_CDATA}          { return PyTokenTypes.END_OF_LINE_COMMENT; }
+{PYXL_DOCTYPE}        { return PyTokenTypes.END_OF_LINE_COMMENT; }
+{PYXL_COMMENT}        { return PyTokenTypes.END_OF_LINE_COMMENT; }
 "{"                   { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_TAGCLOSE}        { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
-{END_OF_LINE_COMMENT}       { return PyTokenTypes.END_OF_LINE_COMMENT; }
+{PYXL_TAGCLOSE}       { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
+{END_OF_LINE_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
-.                       { return PyxlTokenTypes.BADCHAR; }
-
+.                     { return PyxlTokenTypes.BADCHAR; }
 }
 
 // HTML allows attribute values without quotes, if they conform to a limited set of characters.

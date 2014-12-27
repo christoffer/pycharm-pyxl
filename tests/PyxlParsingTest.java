@@ -34,6 +34,10 @@ public class PyxlParsingTest extends ParsingTestCase {
         doTest(true);
     }
 
+    public void testComments() {
+        doTest(true);
+    }
+
     public PyxlParsingTest() {
         super("", "py", new PyxlParserDefinition());
     }

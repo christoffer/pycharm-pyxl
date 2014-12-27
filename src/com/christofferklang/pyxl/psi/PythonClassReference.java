@@ -80,7 +80,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     }
 
     /**
-     * Try and a find an import statment such as "from mymodule.pyxl import html"
+     * Try and a find an import statement such as "from mymodule.pyxl import html"
      */
     private PyImportElement getImportedPyxlHtmlModuleElement() {
         if (!(getContainingFile() instanceof PyFile)) return null; // not a python file
