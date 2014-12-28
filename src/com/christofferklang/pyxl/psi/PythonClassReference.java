@@ -144,7 +144,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     @Override
     public PyExpression getQualifier() {
         PyExpression realQualifier = super.getQualifier();
-        if(realQualifier == null && isPyxlHtmlTag(getReferencedName())) {
+        if (realQualifier == null && PYXL_TAG_NAMES.contains(getReferencedName())) {
             // Implicitly assume the tag is a reference to a pyxl html tag if the pyxl html module is imported and we
             // aren't using a qualifier already. This will break resolution of tags defined in a more local scope than
             // pyxl.html (e.g. if you make your own class x_div in a file that also imports pyxl.html).
@@ -156,43 +156,6 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
             }
         }
         return realQualifier;
-    }
-
-    private boolean isPyxlHtmlTag(String name) {
-        return PYXL_TAG_NAMES.contains(name);
-        // Uncomment the line below to get the "live" set of Pyxl tags.
-        // return getSpecialPyxlTagsFromImportedHtmlModule().contains(name);
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    private Set<String> getSpecialPyxlTagsFromImportedHtmlModule() {
-        if(mCachedSpecialPyxlTagNames == null) {
-            PyImportElement importPyxlHtmlElement = getImportedPyxlHtmlModuleElement();
-            if(importPyxlHtmlElement != null) {
-                PyFile htmlModule = (PyFile) importPyxlHtmlElement.getElementNamed("html");
-
-                mCachedSpecialPyxlTagNames = new HashSet<String>();
-                //noinspection ConstantConditions
-                for(PyClass topLevelClass : htmlModule.getTopLevelClasses()) {
-                    mCachedSpecialPyxlTagNames.add(topLevelClass.getName());
-                }
-
-                // Consider transient classes in the top level scope as well
-                for(PyFromImportStatement importStatement : htmlModule.getFromImports()) {
-                    for(PyImportElement importElement : importStatement.getImportElements()) {
-                        final String visibleName = importElement.getVisibleName();
-                        if(visibleName != null && visibleName.startsWith("x_")) {
-                            // Just swallowing all import classes starting with
-                            // x_ isn't *technically* correct (any class can be named x_), but
-                            // definitely good enough for our purposes.
-                            mCachedSpecialPyxlTagNames.add(importElement.getVisibleName());
-                        }
-                    }
-                }
-            }
-        }
-
-        return mCachedSpecialPyxlTagNames == null ? EMPTY_HASH_SET : mCachedSpecialPyxlTagNames;
     }
 
     /**
