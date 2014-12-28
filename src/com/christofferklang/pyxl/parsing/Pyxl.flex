@@ -74,7 +74,8 @@ TRIPLE_APOS_LITERAL = {THREE_APOS} {APOS_STRING_CHAR}* {THREE_APOS}?
 
 S = [\ \t\n]*
 PYXL_TAGNAME = {IDENT_START}[a-zA-Z0-9_]**
-PYXL_ATTRNAME = {IDENT_START}[a-zA-Z0-9_-]**
+_ATTR_PART = {IDENT_START}[a-zA-Z0-9_-]**
+PYXL_ATTRNAME = ({_ATTR_PART}":")?{_ATTR_PART}**
 PYXL_PRE_OP = [\=\(\[\{,\:\>]         // matching tokenizer.py in dropbox's pyxl parser
 PYXL_PRE_KEYWD = (print|else|yield|return)
 PYXL_TAG_COMING = ({PYXL_PRE_OP}|{PYXL_PRE_KEYWD}){S}"<"

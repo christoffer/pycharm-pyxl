@@ -38,6 +38,14 @@ public class PyxlParsingTest extends ParsingTestCase {
         doTest(true);
     }
 
+    public void testTagNames() {
+        doTest(true);
+    }
+
+    public void testAttributes() {
+        doTest(true);
+    }
+
     public PyxlParsingTest() {
         super("", "py", new PyxlParserDefinition());
     }
