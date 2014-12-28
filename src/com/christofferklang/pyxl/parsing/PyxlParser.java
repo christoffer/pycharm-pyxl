@@ -11,7 +11,6 @@ class PyxlParser extends PyParser {
             PsiBuilder builder, LanguageLevel languageLevel,
             StatementParsing.FUTURE futureFlag) {
 
-        builder.setDebugMode(true);
         return new PyxlParsingContext(builder, languageLevel, futureFlag);
     }
 }
