@@ -62,14 +62,4 @@
     </project-components>
 
     <depends>com.intellij.modules.python</depends>
-
-    <actions>
-        <action id="PyxlTagDefinition"
-                class="com.christofferklang.pyxl.action.PyxlTagDefinitionAction"
-                text="Goto Pyxl definition"
-                description="Jumps to the Pyxl definition of the tag under the cursor">
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
-            <keyboard-shortcut first-keystroke="ctrl shift b" keymap="$default"/>
-        </action>
-    </actions>
 </idea-plugin>
