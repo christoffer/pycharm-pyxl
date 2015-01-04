@@ -18,7 +18,7 @@ public class PyxlCompletionWeigher extends CompletionWeigher {
         final String name = element.getLookupString();
         final LookupElementPresentation presentation = LookupElementPresentation.renderElement(element);
         // Promote pyxl tags
-        if(PyxlReferenceContributor.PYXL_TAG_TYPE_TEXT.equals(presentation.getTypeText())) {
+        if(PyxlClassCompletionContributor.PYXL_TAG_TYPE_TEXT.equals(presentation.getTypeText())) {
             return element.getLookupString().length();
         }
 

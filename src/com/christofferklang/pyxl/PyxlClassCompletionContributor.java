@@ -26,10 +26,10 @@ import java.util.Collection;
 
 import static com.intellij.patterns.PlatformPatterns.psiElement;
 
-public class PyxlReferenceContributor extends CompletionContributor {
+public class PyxlClassCompletionContributor extends CompletionContributor {
     public static final String PYXL_TAG_TYPE_TEXT = "Pyxl Tag";
 
-    public PyxlReferenceContributor() {
+    public PyxlClassCompletionContributor() {
         extend(CompletionType.BASIC,
                 psiElement().withLanguage(PythonLanguage.getInstance()),
                 new PyxlCompletionProvider());

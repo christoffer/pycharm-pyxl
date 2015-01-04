@@ -45,7 +45,7 @@
                 implementationClass="com.christofferklang.pyxl.PyxlHighlighterFactory"
                 />
 
-        <completion.contributor language="Python" implementationClass="com.christofferklang.pyxl.PyxlReferenceContributor" />
+        <completion.contributor language="Python" implementationClass="com.christofferklang.pyxl.PyxlClassCompletionContributor" />
         <weigher key="completion" implementationClass="com.christofferklang.pyxl.PyxlCompletionWeigher" order="first"/>
 
         <colorSettingsPage implementation="com.christofferklang.pyxl.PyxlColorSettingsPage" />
