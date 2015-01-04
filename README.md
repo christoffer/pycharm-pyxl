@@ -15,3 +15,11 @@ Download the [plugin jar](/pyxl-extensions.jar?raw=true) and switch over to `PyC
 - Add proper support for language level Python syntax (`with as:`, etc).
 - Fix xml namespaced attributes
 - Add support for `<!DOCTYPE>` and `<![CDATA[ data data ]]>`
+
+Project setup
+=============
+
+- Create IntelliJ Plugin Project
+- Add the Python Community Plugin from `Settings > Plugins`
+- Add `~/Library/Application Support/<idea version>/python/lib/python-community.jar` as a dependency
+
