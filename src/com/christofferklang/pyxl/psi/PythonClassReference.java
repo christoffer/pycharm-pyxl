@@ -14,7 +14,7 @@ import java.util.WeakHashMap;
 
 public class PythonClassReference extends PyReferenceExpressionImpl {
     private static final Set<String> EMPTY_HASH_SET = new HashSet<String>();
-    private static final Set<String> PYXL_TAG_NAMES = new HashSet<String>();
+    public static final Set<String> PYXL_TAG_NAMES = new HashSet<String>();
 
     static {
         // These are pulled from pyxl/html.py
@@ -67,12 +67,13 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
         PYXL_TAG_NAMES.add("x_header");
         PYXL_TAG_NAMES.add("x_hr");
         PYXL_TAG_NAMES.add("x_html");
-        PYXL_TAG_NAMES.add("x_html_comment");
-        PYXL_TAG_NAMES.add("x_html_decl");
-        PYXL_TAG_NAMES.add("x_html_element");
-        PYXL_TAG_NAMES.add("x_html_element_nochild");
-        PYXL_TAG_NAMES.add("x_html_marked_decl");
-        PYXL_TAG_NAMES.add("x_html_ms_decl");
+// These tags are used by special pyxl syntax like <!-- --> etc
+//        PYXL_TAG_NAMES.add("x_html_comment");
+//        PYXL_TAG_NAMES.add("x_html_decl");
+//        PYXL_TAG_NAMES.add("x_html_element");
+//        PYXL_TAG_NAMES.add("x_html_element_nochild");
+//        PYXL_TAG_NAMES.add("x_html_marked_decl");
+//        PYXL_TAG_NAMES.add("x_html_ms_decl");
         PYXL_TAG_NAMES.add("x_i");
         PYXL_TAG_NAMES.add("x_iframe");
         PYXL_TAG_NAMES.add("x_img");
@@ -98,7 +99,8 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
         PYXL_TAG_NAMES.add("x_pre");
         PYXL_TAG_NAMES.add("x_progress");
         PYXL_TAG_NAMES.add("x_q");
-        PYXL_TAG_NAMES.add("x_rawhtml");
+// This tag is used to support the rawhtml() function.
+//        PYXL_TAG_NAMES.add("x_rawhtml");
         PYXL_TAG_NAMES.add("x_samp");
         PYXL_TAG_NAMES.add("x_script");
         PYXL_TAG_NAMES.add("x_section");
@@ -196,6 +198,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
 
         return null;
     }
+
 
     private String pyxlClassName(String tagName) {
         if(tagName.indexOf(".") > 0) {
