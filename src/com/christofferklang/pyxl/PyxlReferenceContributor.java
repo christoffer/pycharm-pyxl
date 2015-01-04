@@ -1,9 +1,8 @@
 package com.christofferklang.pyxl;
 
 
-import com.christofferklang.pyxl.psi.PythonClassReference;
+import com.christofferklang.pyxl.psi.Helpers;
 import com.intellij.codeInsight.completion.*;
-import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.navigation.NavigationItem;
 import com.intellij.openapi.project.Project;
@@ -17,7 +16,6 @@ import com.intellij.psi.tree.IElementType;
 import com.intellij.util.ProcessingContext;
 import com.jetbrains.python.PythonLanguage;
 import com.jetbrains.python.psi.PyClass;
-import com.jetbrains.python.psi.PyElementType;
 import com.jetbrains.python.psi.PyFile;
 import com.jetbrains.python.psi.PyUtil;
 import com.jetbrains.python.psi.search.PyProjectScopeBuilder;
@@ -51,17 +49,6 @@ public class PyxlReferenceContributor extends CompletionContributor {
             }
         };
 
-        private static final InsertHandler<LookupElement> PYXL_TAG_INSERT_HANDLER = new InsertHandler<LookupElement>() {
-            @Override
-            public void handleInsert(InsertionContext context, LookupElement item) {
-//                final Editor editor = context.getEditor();
-//                final Document document = editor.getDocument();
-//                final int offset = context.getTailOffset();
-//                document.insertString(offset, " />");
-//                editor.getCaretModel().moveToOffset(offset + 1);
-            }
-        };
-
         /**
          * Add the Pyxl classes that are available in the file itself.
          */
@@ -78,7 +65,8 @@ public class PyxlReferenceContributor extends CompletionContributor {
                 }
 
                 // Add default Pyxl/html tags
-                for(String defaultTag: PythonClassReference.PYXL_TAG_NAMES) {
+                // TODO(christoffer) Only do this if pyxl.html is imported
+                for(String defaultTag: Helpers.PYXL_TAG_NAMES) {
                     final String tagName = defaultTag.replaceFirst("x_", "");
                     LookupElementBuilder lookupElement = getLookupElementForString(tagName);
                     lookupElement = lookupElement.withTailText(" (pyxl.html)", true);
@@ -90,8 +78,7 @@ public class PyxlReferenceContributor extends CompletionContributor {
         private static LookupElementBuilder getLookupElementForString(String tagName) {
             return LookupElementBuilder.create(tagName)
                     .withTypeText(PYXL_TAG_TYPE_TEXT, true)
-                    .withBoldness(true)
-                    .withInsertHandler(PYXL_TAG_INSERT_HANDLER);
+                    .withBoldness(true);
         }
 
         @Override
@@ -126,8 +113,7 @@ public class PyxlReferenceContributor extends CompletionContributor {
                         final String tagName = elementName.substring(2, elementName.length());
                         LookupElementBuilder lookupElement = LookupElementBuilder.create(tagName)
                                 .withTailText(" " + ((NavigationItem) element).getPresentation().getLocationString(), true)
-                                .withTypeText(PYXL_TAG_TYPE_TEXT, true)
-                                .withInsertHandler(PYXL_TAG_INSERT_HANDLER);
+                                .withTypeText(PYXL_TAG_TYPE_TEXT, true);
                         resultSet.addElement(lookupElement);
                     }
                 }
