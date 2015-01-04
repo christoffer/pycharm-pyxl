@@ -4,10 +4,8 @@ import com.intellij.codeInsight.completion.CompletionLocation;
 import com.intellij.codeInsight.completion.CompletionWeigher;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementPresentation;
-import com.intellij.psi.Weigher;
 import com.intellij.psi.util.PsiUtilCore;
 import com.jetbrains.python.PythonLanguage;
-import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
 public class PyxlCompletionWeigher extends CompletionWeigher {
