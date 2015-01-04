@@ -168,4 +168,35 @@ public class Helpers {
         Helpers.PYXL_TAG_NAMES.add("x_var");
         Helpers.PYXL_TAG_NAMES.add("x_video");
     }
+
+    /**
+     * Returns a Pyxl class name from a tag.
+     * Examples:
+     * some_tag => x_some_tag
+     * some_module.some_tag => x_some_tag
+     * x_some_tag => x_x_some_tag
+     */
+    public static String tagNameToPyxlName(String tagName) {
+        if (tagName.indexOf(".") > 0) {
+            // tag contains a module reference like: <module.pyxl_class>
+            final StringBuilder qualifiedTagName = new StringBuilder(tagName);
+            final int offset = qualifiedTagName.lastIndexOf(".");
+            tagName = qualifiedTagName.subSequence(offset + 1, qualifiedTagName.length()).toString();
+            return "x_" + tagName;
+        }
+        return "x_" + tagName;
+    }
+
+    /**
+     * Strips the Pyxl name prefix from a string.
+     * Examples:
+     * x_some_class => some_class
+     * not_a_pyxl_name => not_a_pyxl_name
+     */
+    public static String pyxlNameToTagName(String pyxlName) {
+        if(pyxlName != null && pyxlName.startsWith("x_")) {
+            return pyxlName.substring(2, pyxlName.length());
+        }
+        return pyxlName;
+    }
 }

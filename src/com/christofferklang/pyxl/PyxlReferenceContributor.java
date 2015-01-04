@@ -53,21 +53,25 @@ public class PyxlReferenceContributor extends CompletionContributor {
          * Add the Pyxl classes that are available in the file itself.
          */
         private static void addCompletionsFromFile(PsiFile targetFile, CompletionResultSet resultSet) {
-            if (targetFile instanceof PyFile) {
-                for (PyClass pyClass : ((PyFile) targetFile).getTopLevelClasses()) {
-                    final String className = pyClass.getName();
-                    if (className == null || !className.startsWith("x_")) {
-                        continue; // not a pyxl class
-                    }
+            if (!(targetFile instanceof PyFile)) {
+                return;
+            }
+            final PyFile pyFile = (PyFile) targetFile;
 
-                    final String tagName = className.substring(2, className.length());
-                    resultSet.addElement(getLookupElementForString(tagName));
+            for (PyClass pyClass : pyFile.getTopLevelClasses()) {
+                final String className = pyClass.getName();
+                if(className == null || !className.startsWith("x_")) {
+                    continue;
                 }
 
-                // Add default Pyxl/html tags
-                // TODO(christoffer) Only do this if pyxl.html is imported
-                for(String defaultTag: Helpers.PYXL_TAG_NAMES) {
-                    final String tagName = defaultTag.replaceFirst("x_", "");
+                final String tagName = Helpers.pyxlNameToTagName(className);
+                resultSet.addElement(getLookupElementForString(tagName));
+            }
+
+            if(Helpers.getImportedPyxlHtmlModuleElementFromFile(pyFile) != null) {
+                // Add default Pyxl/html tags if this file contains pyxl.html
+                for (String defaultTag : Helpers.PYXL_TAG_NAMES) {
+                    final String tagName = Helpers.pyxlNameToTagName(defaultTag);
                     LookupElementBuilder lookupElement = getLookupElementForString(tagName);
                     lookupElement = lookupElement.withTailText(" (pyxl.html)", true);
                     resultSet.addElement(lookupElement);

@@ -7,9 +7,6 @@ import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyReferenceExpressionImpl;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class PythonClassReference extends PyReferenceExpressionImpl {
     public PythonClassReference(ASTNode astNode) {
         super(astNode);
@@ -18,7 +15,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     @Nullable
     @Override
     public String getReferencedName() {
-        return pyxlClassName(getNode().getText());
+        return Helpers.tagNameToPyxlName(getNode().getText());
     }
 
     @Nullable
@@ -40,18 +37,6 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
             }
         }
         return realQualifier;
-    }
-
-
-    private String pyxlClassName(String tagName) {
-        if(tagName.indexOf(".") > 0) {
-            // tag contains a module reference like: <module.pyxl_class>
-            final StringBuilder qualifiedTagName = new StringBuilder(tagName);
-            final int offset = qualifiedTagName.lastIndexOf(".");
-            tagName = qualifiedTagName.subSequence(offset + 1, qualifiedTagName.length()).toString();
-            return "x_" + tagName;
-        }
-        return "x_" + tagName;
     }
 
     @Override
