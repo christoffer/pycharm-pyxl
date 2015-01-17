@@ -1,4 +1,5 @@
 package com.christofferklang.pyxl;
+
 import com.intellij.formatting.SpacingBuilder;
 import com.intellij.psi.codeStyle.CodeStyleSettings;
 import com.jetbrains.python.formatter.PythonFormattingModelBuilder;

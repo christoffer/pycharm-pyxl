@@ -16,7 +16,7 @@ public class PyxlIndentingLexer extends PythonIndentingProcessor {
     protected void processSpecialTokens() {
         super.processSpecialTokens();
         int tokenStart = getBaseTokenStart();
-        if (getBaseTokenType() == null && addFinalBreak) {
+        if(getBaseTokenType() == null && addFinalBreak) {
             pushToken(PyTokenTypes.STATEMENT_BREAK, tokenStart, tokenStart);
             addFinalBreak = false;
         }

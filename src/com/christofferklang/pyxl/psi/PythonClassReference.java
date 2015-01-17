@@ -2,7 +2,6 @@ package com.christofferklang.pyxl.psi;
 
 import com.intellij.lang.ASTNode;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.tree.TokenSet;
 import com.intellij.psi.util.QualifiedName;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyReferenceExpressionImpl;
@@ -145,14 +144,14 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     @Override
     public PyExpression getQualifier() {
         PyExpression realQualifier = super.getQualifier();
-        if (realQualifier == null && isPyxlHtmlTag(getReferencedName())) {
+        if(realQualifier == null && isPyxlHtmlTag(getReferencedName())) {
             // Implicitly assume the tag is a reference to a pyxl html tag if the pyxl html module is imported and we
             // aren't using a qualifier already. This will break resolution of tags defined in a more local scope than
             // pyxl.html (e.g. if you make your own class x_div in a file that also imports pyxl.html).
             // This is consistent with how Pyxl works:
             // https://github.com/dropbox/pyxl/blob/daa01ca026ef3dba931d3ba56118ad8f8f6bec94/pyxl/codec/parser.py#L211
             PyImportElement pyxlHtmlImportElement = getImportedPyxlHtmlModuleElement();
-            if (pyxlHtmlImportElement != null) {
+            if(pyxlHtmlImportElement != null) {
                 return pyxlHtmlImportElement.getImportReferenceExpression();
             }
         }
@@ -167,19 +166,19 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
 
     @SuppressWarnings("UnusedDeclaration")
     private Set<String> getSpecialPyxlTagsFromImportedHtmlModule() {
-        if (mCachedSpecialPyxlTagNames == null) {
+        if(mCachedSpecialPyxlTagNames == null) {
             PyImportElement importPyxlHtmlElement = getImportedPyxlHtmlModuleElement();
-            if (importPyxlHtmlElement != null) {
+            if(importPyxlHtmlElement != null) {
                 PyFile htmlModule = (PyFile) importPyxlHtmlElement.getElementNamed("html");
 
                 mCachedSpecialPyxlTagNames = new HashSet<String>();
                 //noinspection ConstantConditions
-                for (PyClass topLevelClass : htmlModule.getTopLevelClasses()) {
+                for(PyClass topLevelClass : htmlModule.getTopLevelClasses()) {
                     mCachedSpecialPyxlTagNames.add(topLevelClass.getName());
                 }
 
                 // Consider transient classes in the top level scope as well
-                for (PyFromImportStatement importStatement : htmlModule.getFromImports()) {
+                for(PyFromImportStatement importStatement : htmlModule.getFromImports()) {
                     for(PyImportElement importElement : importStatement.getImportElements()) {
                         final String visibleName = importElement.getVisibleName();
                         if(visibleName != null && visibleName.startsWith("x_")) {
@@ -200,7 +199,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
      * Try and a find an import statement such as "from mymodule.pyxl import html"
      */
     private PyImportElement getImportedPyxlHtmlModuleElement() {
-        if (!(getContainingFile() instanceof PyFile)) return null; // not a python file
+        if(!(getContainingFile() instanceof PyFile)) return null; // not a python file
 
         final PyFile pyFile = (PyFile) getContainingFile();
         final String cacheKey = String.format("%s:%s",
@@ -216,15 +215,15 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
 
         List<PyFromImportStatement> imports = pyFile.getFromImports();
 
-        for (PyFromImportStatement importStatement : imports) {
+        for(PyFromImportStatement importStatement : imports) {
             // check for import statements that import from a "pyxl" package
             final QualifiedName qualifiedName = importStatement.getImportSourceQName();
-            if (qualifiedName != null && "pyxl".equals(qualifiedName.getLastComponent())) {
+            if(qualifiedName != null && "pyxl".equals(qualifiedName.getLastComponent())) {
                 // check only for imports of the module "html"
                 PyImportElement[] importedElements = importStatement.getImportElements();
-                for (PyImportElement importedElement : importedElements) {
+                for(PyImportElement importedElement : importedElements) {
                     PsiElement htmlElement = importedElement.getElementNamed("html");
-                    if (htmlElement instanceof PyFile) {
+                    if(htmlElement instanceof PyFile) {
                         sHtmlImportCache.put(cacheKey, importedElement);
                         return importedElement;
                     }
@@ -236,7 +235,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     }
 
     private String pyxlClassName(String tagName) {
-        if (tagName.indexOf(".") > 0) {
+        if(tagName.indexOf(".") > 0) {
             // tag contains a module reference like: <module.pyxl_class>
             final StringBuilder qualifiedTagName = new StringBuilder(tagName);
             final int offset = qualifiedTagName.lastIndexOf(".");

@@ -16,7 +16,7 @@ public class PyxlHighlighterFactory extends PySyntaxHighlighterFactory {
     }
 
     private LanguageLevel getLanguageLevelForFile(VirtualFile virtualFile) {
-        if (virtualFile instanceof PyFile) {
+        if(virtualFile instanceof PyFile) {
             return ((PyFile) virtualFile).getLanguageLevel();
         }
         return LanguageLevel.getDefault();
