@@ -1,5 +1,6 @@
 package com.christofferklang.pyxl;
 
+import com.christofferklang.pyxl.codeinsight.PyxlClassCompletionContributor;
 import com.intellij.codeInsight.completion.CompletionLocation;
 import com.intellij.codeInsight.completion.CompletionWeigher;
 import com.intellij.codeInsight.lookup.LookupElement;
@@ -18,7 +19,7 @@ public class PyxlCompletionWeigher extends CompletionWeigher {
         final String name = element.getLookupString();
         final LookupElementPresentation presentation = LookupElementPresentation.renderElement(element);
         // Promote pyxl tags
-        if(PyxlClassCompletionContributor.PYXL_TAG_TYPE_TEXT.equals(presentation.getTypeText())) {
+        if (PyxlClassCompletionContributor.PYXL_TAG_TYPE_TEXT.equals(presentation.getTypeText())) {
             return element.getLookupString().length();
         }
 

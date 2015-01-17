@@ -1,6 +1,7 @@
-package com.christofferklang.pyxl;
+package com.christofferklang.pyxl.codeinsight;
 
 
+import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.christofferklang.pyxl.psi.Helpers;
 import com.intellij.codeInsight.completion.*;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
