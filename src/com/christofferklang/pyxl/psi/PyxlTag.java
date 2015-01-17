@@ -25,16 +25,28 @@ public class PyxlTag extends PyCallExpressionImpl {
         super(astNode);
     }
 
+    public String getPythonClassName() {
+        final PyExpression callee = getCallee();
+        if(callee != null) {
+            String name = callee.getName();
+            if(name == null) {
+                name = callee.getNode().getText();
+            }
+            return name;
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
-        PyExpression callee = getCallee();
-        return String.format("Pyxl Tag: %s", callee == null ? "null" : callee.getName());
+        final String name = getPythonClassName();
+        return String.format("Pyxl Tag: %s", name == null ? "null" : name);
     }
 
     @Nullable
     @Override
     public PyExpression getCallee() {
-        return (PyExpression) findChildByType(PyxlElementTypes.TAG_REFERENCE);
+        return findChildByClass(PyExpression.class);
     }
 
     @Override
