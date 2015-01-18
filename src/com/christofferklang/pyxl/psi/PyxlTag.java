@@ -2,8 +2,12 @@ package com.christofferklang.pyxl.psi;
 
 import com.christofferklang.pyxl.PyxlElementTypes;
 import com.intellij.lang.ASTNode;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiPolyVariantReference;
 import com.jetbrains.python.psi.PyArgumentList;
+import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyExpression;
+import com.jetbrains.python.psi.PyParenthesizedExpression;
 import com.jetbrains.python.psi.impl.PyCallExpressionImpl;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,28 +29,56 @@ public class PyxlTag extends PyCallExpressionImpl {
         super(astNode);
     }
 
+    /**
+     * Returns the name of the referenced class in Python, or null.
+     */
     public String getPythonClassName() {
-        final PyExpression callee = getCallee();
-        if(callee != null) {
-            String name = callee.getName();
-            if(name == null) {
-                name = callee.getNode().getText();
-            }
-            return name;
+        PyClass referencedPyClass = getReferencedPythonClass();
+        if(referencedPyClass != null) {
+            return referencedPyClass.getQualifiedName();
         }
         return null;
+    }
+
+    /**
+     * Returns a PyClass instance of the referenced class, or null.
+     */
+    public PyClass getReferencedPythonClass() {
+        final PyExpression callee = getCallee();
+        if(callee instanceof PythonClassReference) {
+            PsiElement resolved  = ((PythonClassReference) callee).getReference().resolve();
+            if(resolved instanceof PyClass) {
+                return (PyClass) resolved;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public PyExpression getCallee() {
+        Object seeker = null;
+
+        // Grab the first expression in the call
+        for(PsiElement child : getChildren()) {
+            if(child instanceof PyExpression) {
+                seeker = child;
+                break;
+            }
+        }
+
+        // If it's a nested expression, go up until we hit the top
+        while(seeker instanceof PyParenthesizedExpression) {
+            seeker = ((PyParenthesizedExpression) seeker).getContainedExpression();
+        }
+
+        return (seeker != null) ? (PyExpression) seeker : null;
     }
 
     @Override
     public String toString() {
         final String name = getPythonClassName();
         return String.format("Pyxl Tag: %s", name == null ? "null" : name);
-    }
-
-    @Nullable
-    @Override
-    public PyExpression getCallee() {
-        return findChildByClass(PyExpression.class);
     }
 
     @Override

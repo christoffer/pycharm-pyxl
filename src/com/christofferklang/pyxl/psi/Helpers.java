@@ -2,6 +2,7 @@ package com.christofferklang.pyxl.psi;
 
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.QualifiedName;
+import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyFile;
 import com.jetbrains.python.psi.PyFromImportStatement;
 import com.jetbrains.python.psi.PyImportElement;
@@ -176,7 +177,7 @@ public class Helpers {
      * some_module.some_tag => x_some_tag
      * x_some_tag => x_x_some_tag
      */
-    public static String tagNameToPyxlName(String tagName) {
+    public static String pyxlToPythonClass(String tagName) {
         if (tagName.indexOf(".") > 0) {
             // tag contains a module reference like: <module.pyxl_class>
             final StringBuilder qualifiedTagName = new StringBuilder(tagName);
@@ -193,7 +194,7 @@ public class Helpers {
      * x_some_class => some_class
      * not_a_pyxl_name => not_a_pyxl_name
      */
-    public static String pyxlNameToTagName(String pyxlName) {
+    public static String pythonClassToPyxl(String pyxlName) {
         if(pyxlName != null && pyxlName.startsWith("x_")) {
             return pyxlName.substring(2, pyxlName.length());
         }

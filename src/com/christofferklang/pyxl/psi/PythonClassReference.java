@@ -1,8 +1,6 @@
 package com.christofferklang.pyxl.psi;
 
 import com.intellij.lang.ASTNode;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.util.QualifiedName;
 import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyReferenceExpressionImpl;
 import org.jetbrains.annotations.Nullable;
@@ -15,7 +13,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
     @Nullable
     @Override
     public String getReferencedName() {
-        return Helpers.tagNameToPyxlName(getNode().getText());
+        return Helpers.pyxlToPythonClass(getNode().getText());
     }
 
     @Nullable
