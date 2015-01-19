@@ -26,8 +26,13 @@ class PyxlExpressionParsing extends ExpressionParsing {
 
     public boolean parsePrimaryExpression(boolean isTargetExpression) {
         if(myBuilder.getTokenType() == PyxlTokenTypes.TAGBEGIN) {
-            parsePyxlTag();
-            return true;
+            if(myBuilder.lookAhead(1) == PyxlTokenTypes.TAGNAME) {
+                parsePyxlTag();
+                return true;
+            } else {
+                return false;
+            }
+
         } else {
             return super.parsePrimaryExpression(isTargetExpression);
         }
