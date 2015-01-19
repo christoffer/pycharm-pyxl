@@ -1,9 +1,6 @@
 package com.christofferklang.pyxl;
 
-import com.christofferklang.pyxl.psi.PythonClassReference;
-import com.christofferklang.pyxl.psi.PyxlArgumentList;
-import com.christofferklang.pyxl.psi.PyxlAttrName;
-import com.christofferklang.pyxl.psi.PyxlTag;
+import com.christofferklang.pyxl.psi.*;
 import com.intellij.psi.tree.IElementType;
 import com.jetbrains.python.psi.PyElementType;
 
@@ -13,6 +10,9 @@ public class PyxlElementTypes {
 
     public static IElementType TAG =
             new PyElementType("TAG", PyxlTag.class);
+
+    public static IElementType COND_TAG =
+            new PyElementType("COND_TAG", PyxlConditionalTag.class);
 
     public static IElementType ATTRNAME =
             new PyElementType("ATTRNAME", PyxlAttrName.class);

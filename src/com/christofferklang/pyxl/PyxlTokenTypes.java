@@ -17,11 +17,11 @@ public class PyxlTokenTypes {
     public static final PyElementType TAGNAME_MODULE = new PyElementType("PYXL TAGNAME_MODULE");
     public static final PyElementType TAGNAME = new PyElementType("PYXL TAGNAME");
     public static final PyElementType TAGEND = new PyElementType("PYXL TAGEND >");
-    public static final PyElementType TAGCLOSE = new PyElementType("PYXL TAGCLOSE </");
+    public static final PyElementType CLOSING_TAGBEGIN = new PyElementType("PYXL CLOSING_TAGBEGIN </");
 
     public static final PyElementType TAGENDANDCLOSE = new PyElementType("PYXL TAGENDANDCLOSE />");
 
-    public static final PyElementType BUILT_IN_TAG = new PyElementType("PYXL BUILT IN TAG");
+    public static final PyElementType CONDITIONAL = new PyElementType("PYXL CONDITIONAL TAG");
 
     public static final PyElementType EMBED_START = new PyElementType("PYXL PYTHON EMBED BEGIN {");
     public static final PyElementType EMBED_END = new PyElementType("PYXL PYTHON EMBED END }");

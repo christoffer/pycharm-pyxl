@@ -33,7 +33,7 @@ class PyxlHighlighter extends PyHighlighter {
         keys2 = new THashMap<IElementType, TextAttributesKey>();
 
         keys1.put(PyxlTokenTypes.TAGBEGIN, PyxlHighlighterColors.PYXL_TAG);
-        keys1.put(PyxlTokenTypes.TAGCLOSE, PyxlHighlighterColors.PYXL_TAG);
+        keys1.put(PyxlTokenTypes.CLOSING_TAGBEGIN, PyxlHighlighterColors.PYXL_TAG);
         keys1.put(PyxlTokenTypes.TAGEND, PyxlHighlighterColors.PYXL_TAG);
         keys1.put(PyxlTokenTypes.TAGENDANDCLOSE, PyxlHighlighterColors.PYXL_TAG);
 
@@ -41,7 +41,7 @@ class PyxlHighlighter extends PyHighlighter {
 
         keys1.put(PyxlTokenTypes.TAGNAME, PyxlHighlighterColors.PYXL_TAG_NAME);
         keys1.put(PyxlTokenTypes.TAGNAME_MODULE, PyxlHighlighterColors.PYXL_TAG_NAME);
-        keys1.put(PyxlTokenTypes.BUILT_IN_TAG, PyxlHighlighterColors.PYXL_TAG_NAME);
+        keys1.put(PyxlTokenTypes.CONDITIONAL, PyxlHighlighterColors.PYXL_TAG_NAME);
 
         keys1.put(PyxlTokenTypes.ATTRNAME, PyxlHighlighterColors.PYXL_ATTRIBUTE_NAME);
         keys1.put(PyxlTokenTypes.ATTRVALUE, PyxlHighlighterColors.PYXL_ATTRIBUTE_VALUE);

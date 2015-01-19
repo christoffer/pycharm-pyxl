@@ -35,8 +35,8 @@ DECIMALINTEGER = (({NONZERODIGIT}({DIGIT})*)|0)
 INTEGER = {DECIMALINTEGER}|{OCTINTEGER}|{HEXINTEGER}|{BININTEGER}
 LONGINTEGER = {INTEGER}[Ll]
 
+PYXL_ENCODING_STRING = "#"{S}"coding:"{S}"pyxl"{S}
 END_OF_LINE_COMMENT="#"[^\r\n]*
-PYXL_ENCODING_STRING = "#"{S}"coding:"{S}[^\n\r]*
 IDENT_START = [a-zA-Z_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:]|[:unicode_titlecase_letter:]|[:unicode_modifier_letter:]|[:unicode_other_letter:]|[:unicode_letter_number:]
 IDENT_CONTINUE = [a-zA-Z0-9_]|[:unicode_uppercase_letter:]|[:unicode_lowercase_letter:]|[:unicode_titlecase_letter:]|[:unicode_modifier_letter:]|[:unicode_other_letter:]|[:unicode_letter_number:]|[:unicode_non_spacing_mark:]|[:unicode_combining_spacing_mark:]|[:unicode_decimal_digit_number:]|[:unicode_connector_punctuation:]
 IDENTIFIER = {IDENT_START}{IDENT_CONTINUE}**
@@ -197,8 +197,8 @@ return yylength()-s.length();
 }
 
 <IN_CLOSE_TAG> {
-"if" { return PyxlTokenTypes.BUILT_IN_TAG; }
-"else" { return PyxlTokenTypes.BUILT_IN_TAG; }
+"if" { return PyxlTokenTypes.CONDITIONAL; }
+"else" { return PyxlTokenTypes.CONDITIONAL; }
 {IDENTIFIER}"."       { yypushback(1); return PyxlTokenTypes.TAGNAME_MODULE; }
 {PYXL_TAGNAME}        { return PyxlTokenTypes.TAGNAME; }
 ">"                   { return exitState() ? PyxlTokenTypes.TAGEND : PyxlTokenTypes.BADCHAR; }
@@ -228,7 +228,7 @@ return yylength()-s.length();
 {PYXL_DOCTYPE}        { return PyTokenTypes.END_OF_LINE_COMMENT; }
 {PYXL_COMMENT}        { return PyTokenTypes.END_OF_LINE_COMMENT; }
 "{"                   { enterState(IN_PYXL_PYTHON_EMBED); return PyxlTokenTypes.EMBED_START; }
-{PYXL_TAGCLOSE}       { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.TAGCLOSE; }
+{PYXL_TAGCLOSE}       { yybegin(IN_CLOSE_TAG); yypushback(yylength()-2); return PyxlTokenTypes.CLOSING_TAGBEGIN; }
 {END_OF_LINE_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
 {PYXL_BLOCK_STRING}   { return PyxlTokenTypes.STRING; }
 .                     { return PyxlTokenTypes.BADCHAR; }
@@ -276,8 +276,8 @@ return yylength()-s.length();
 
 <IN_PYXL_TAG_NAME> { // parse a tag name
 //">"                     {  yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND; }
-"if" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
-"else" { yybegin(IN_ATTR); return PyxlTokenTypes.BUILT_IN_TAG; }
+"if" { yybegin(IN_ATTR); return PyxlTokenTypes.CONDITIONAL; }
+"else" { yybegin(IN_ATTR); return PyxlTokenTypes.CONDITIONAL; }
 {IDENTIFIER}"."      { yypushback(1); return PyxlTokenTypes.TAGNAME_MODULE; }
 {PYXL_TAGNAME}       { yybegin(IN_ATTR); return PyxlTokenTypes.TAGNAME; }
 "."                  { return PyTokenTypes.DOT; }

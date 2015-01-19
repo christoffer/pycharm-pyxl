@@ -7,9 +7,20 @@ import com.jetbrains.python.psi.PyExpression;
 import com.jetbrains.python.psi.impl.PyCallExpressionImpl;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Represents a PyxlTag as a Python call expression of a class.
+ * The arguments of the Pyxl tag are interpreted as keyword arguments to the
+ * __init__ method, while the tag body is interpreted as arguments to the class's
+ * __call__ method.
+ *
+ * <tag my="value"><span>{"child" + "content"}</span></tag>
+ * x_tag(my="value").__call__(
+ *   x_span().__call__(
+ *      ("child" + "content")
+ *   )
+ * )
+ */
 public class PyxlTag extends PyCallExpressionImpl {
-    private String pyxlTagName;
-
     public PyxlTag(ASTNode astNode) {
         super(astNode);
     }
