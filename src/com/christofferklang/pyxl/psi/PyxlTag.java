@@ -3,12 +3,11 @@ package com.christofferklang.pyxl.psi;
 import com.christofferklang.pyxl.PyxlElementTypes;
 import com.intellij.lang.ASTNode;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiPolyVariantReference;
 import com.jetbrains.python.psi.PyArgumentList;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyExpression;
-import com.jetbrains.python.psi.PyParenthesizedExpression;
 import com.jetbrains.python.psi.impl.PyCallExpressionImpl;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -16,12 +15,12 @@ import org.jetbrains.annotations.Nullable;
  * The arguments of the Pyxl tag are interpreted as keyword arguments to the
  * __init__ method, while the tag body is interpreted as arguments to the class's
  * __call__ method.
- *
+ * <p/>
  * <tag my="value"><span>{"child" + "content"}</span></tag>
  * x_tag(my="value").__call__(
- *   x_span().__call__(
- *      ("child" + "content")
- *   )
+ * x_span().__call__(
+ * ("child" + "content")
+ * )
  * )
  */
 public class PyxlTag extends PyCallExpressionImpl {
@@ -41,12 +40,12 @@ public class PyxlTag extends PyCallExpressionImpl {
     }
 
     /**
-     * Returns a PyClass instance of the referenced class, or null.
+     * Dereferences the PyClass from the Pyxl tag.
      */
     public PyClass getReferencedPythonClass() {
-        final PyExpression callee = getCallee();
-        if(callee instanceof PythonClassReference) {
-            PsiElement resolved  = ((PythonClassReference) callee).getReference().resolve();
+        PythonClassReference pyClassRef = findChildByClass(PythonClassReference.class);
+        if(pyClassRef != null) {
+            final PsiElement resolved = pyClassRef.getReference().resolve();
             if(resolved instanceof PyClass) {
                 return (PyClass) resolved;
             }
@@ -57,22 +56,7 @@ public class PyxlTag extends PyCallExpressionImpl {
     @Nullable
     @Override
     public PyExpression getCallee() {
-        Object seeker = null;
-
-        // Grab the first expression in the call
-        for(PsiElement child : getChildren()) {
-            if(child instanceof PyExpression) {
-                seeker = child;
-                break;
-            }
-        }
-
-        // If it's a nested expression, go up until we hit the top
-        while(seeker instanceof PyParenthesizedExpression) {
-            seeker = ((PyParenthesizedExpression) seeker).getContainedExpression();
-        }
-
-        return (seeker != null) ? (PyExpression) seeker : null;
+        return findChildByClass(PythonClassReference.class);
     }
 
     @Override
