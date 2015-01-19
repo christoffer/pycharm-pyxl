@@ -37,7 +37,7 @@ class PyxlHighlighter extends PyHighlighter {
         keys1.put(PyxlTokenTypes.TAGEND, PyxlHighlighterColors.PYXL_TAG);
         keys1.put(PyxlTokenTypes.TAGENDANDCLOSE, PyxlHighlighterColors.PYXL_TAG);
 
-        keys1.put(PyxlElementTypes.TAG, PyxlHighlighterColors.PYXL_EMBEDDED);
+        keys1.put(PyxlElementTypes.PYXL_CLASS_INIT_CALL, PyxlHighlighterColors.PYXL_EMBEDDED);
 
         keys1.put(PyxlTokenTypes.TAGNAME, PyxlHighlighterColors.PYXL_TAG_NAME);
         keys1.put(PyxlTokenTypes.TAGNAME_MODULE, PyxlHighlighterColors.PYXL_TAG_NAME);

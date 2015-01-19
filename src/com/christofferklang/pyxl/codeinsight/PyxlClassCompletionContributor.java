@@ -3,7 +3,7 @@ package com.christofferklang.pyxl.codeinsight;
 
 import com.christofferklang.pyxl.PyxlTokenTypes;
 import com.christofferklang.pyxl.psi.Helpers;
-import com.christofferklang.pyxl.psi.PythonClassReference;
+import com.christofferklang.pyxl.psi.PyClassReference;
 import com.intellij.codeInsight.completion.*;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.navigation.NavigationItem;
@@ -44,7 +44,7 @@ public class PyxlClassCompletionContributor extends CompletionContributor {
     public void fillCompletionVariants(CompletionParameters parameters, CompletionResultSet result) {
         final PsiElement element = parameters.getPosition();
         final PsiElement parent = element.getParent();
-        if(parent instanceof PythonClassReference) {
+        if(parent instanceof PyClassReference) {
             super.fillCompletionVariants(parameters, result);
         }
     }

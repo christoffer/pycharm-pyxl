@@ -78,7 +78,7 @@ _ATTR_PART = {IDENT_START}[a-zA-Z0-9_-]**
 PYXL_ATTRNAME = ({_ATTR_PART}":")?{_ATTR_PART}**
 PYXL_PRE_OP = [\=\(\[\{,\:\>]         // matching tokenizer.py in dropbox's pyxl parser
 PYXL_PRE_KEYWD = (print|else|yield|return)
-PYXL_TAG_COMING = ({PYXL_PRE_OP}|{PYXL_PRE_KEYWD}){S}"<"
+PYXL_TAG_COMING = ({PYXL_PRE_OP}|{PYXL_PRE_KEYWD}){S}"<"{PYXL_TAGNAME}
 PYXL_TAGCLOSE = "</" ({IDENTIFIER}".")*{PYXL_TAGNAME} ">"
 PYXL_COMMENT = "<!--" ([^\-]|(-[^\-])|(--[^>]))* "-->"
 PYXL_DOCTYPE = "<!DOCTYPE" ([^>])* ">"
@@ -271,7 +271,7 @@ return yylength()-s.length();
 ">"                 { yybegin(IN_PYXL_BLOCK); return PyxlTokenTypes.TAGEND;}
 "/>"                { return exitState() ? PyxlTokenTypes.TAGENDANDCLOSE : PyxlTokenTypes.BADCHAR; }
 {END_OF_LINE_COMMENT} { return PyTokenTypes.END_OF_LINE_COMMENT; }
-. { return PyxlTokenTypes.BADCHAR; }
+[^] { return PyxlTokenTypes.BADCHAR; }
 }
 
 <IN_PYXL_TAG_NAME> { // parse a tag name

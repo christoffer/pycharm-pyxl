@@ -1,7 +1,7 @@
 package com.christofferklang.pyxl.codeinsight;
 
 import com.christofferklang.pyxl.psi.PyxlAttrName;
-import com.christofferklang.pyxl.psi.PyxlTag;
+import com.christofferklang.pyxl.psi.PyxlClassInitCallExpression;
 import com.intellij.codeInsight.completion.*;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.psi.PsiElement;
@@ -63,12 +63,12 @@ public class PyxlAttrCompletionContributor extends CompletionContributor {
 
     private PyClass getPyClass(PsiElement element) {
         PsiElement seeker = element;
-        while(!(seeker instanceof PyxlTag) && seeker != null) {
+        while(!(seeker instanceof PyxlClassInitCallExpression) && seeker != null) {
             seeker = seeker.getParent();
         }
         if(seeker != null) {
-            PyxlTag pyxlTag = (PyxlTag) seeker;
-            return pyxlTag.getReferencedPythonClass();
+            PyxlClassInitCallExpression headCallExpr = (PyxlClassInitCallExpression) seeker;
+            return headCallExpr.getReferencedPythonClass();
         }
         return null;
     }

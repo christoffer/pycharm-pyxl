@@ -7,4 +7,9 @@ public class PyxlArgumentList extends PyArgumentListImpl {
     public PyxlArgumentList(ASTNode astNode) {
         super(astNode);
     }
+
+    @Override
+    public String toString() {
+        return "Pyxl Argument List";
+    }
 }

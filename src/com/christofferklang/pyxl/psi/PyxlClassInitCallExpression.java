@@ -7,24 +7,13 @@ import com.jetbrains.python.psi.PyArgumentList;
 import com.jetbrains.python.psi.PyClass;
 import com.jetbrains.python.psi.PyExpression;
 import com.jetbrains.python.psi.impl.PyCallExpressionImpl;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents a PyxlTag as a Python call expression of a class.
- * The arguments of the Pyxl tag are interpreted as keyword arguments to the
- * __init__ method, while the tag body is interpreted as arguments to the class's
- * __call__ method.
- * <p/>
- * <tag my="value"><span>{"child" + "content"}</span></tag>
- * x_tag(my="value").__call__(
- * x_span().__call__(
- * ("child" + "content")
- * )
- * )
+ * Represents <tag attr='val'> as the Python call x_tag(attr='val')
  */
-public class PyxlTag extends PyCallExpressionImpl {
-    public PyxlTag(ASTNode astNode) {
+public class PyxlClassInitCallExpression extends PyCallExpressionImpl {
+    public PyxlClassInitCallExpression(ASTNode astNode) {
         super(astNode);
     }
 
@@ -43,7 +32,7 @@ public class PyxlTag extends PyCallExpressionImpl {
      * Dereferences the PyClass from the Pyxl tag.
      */
     public PyClass getReferencedPythonClass() {
-        PythonClassReference pyClassRef = findChildByClass(PythonClassReference.class);
+        PyClassReference pyClassRef = findChildByClass(PyClassReference.class);
         if(pyClassRef != null) {
             final PsiElement resolved = pyClassRef.getReference().resolve();
             if(resolved instanceof PyClass) {
@@ -56,13 +45,14 @@ public class PyxlTag extends PyCallExpressionImpl {
     @Nullable
     @Override
     public PyExpression getCallee() {
-        return findChildByClass(PythonClassReference.class);
+        return findChildByClass(PyClassReference.class);
     }
 
     @Override
     public String toString() {
         final String name = getPythonClassName();
-        return String.format("Pyxl Tag: %s", name == null ? "null" : name);
+        final String args = getArgumentList() == null ? "<no args>" : getArgumentList().toString();
+        return String.format("Pyxl class instantiation call: %s(%s)", (name == null ? "null" : name), args);
     }
 
     @Override

@@ -5,11 +5,14 @@ import com.intellij.psi.tree.IElementType;
 import com.jetbrains.python.psi.PyElementType;
 
 public class PyxlElementTypes {
-    public static IElementType TAG_REFERENCE =
-            new PyElementType("TAG_REFERENCE", PythonClassReference.class);
+    public static IElementType PYCLASS_REF =
+            new PyElementType("PYCLASS REF", PyClassReference.class);
 
-    public static IElementType TAG =
-            new PyElementType("TAG", PyxlTag.class);
+    public static IElementType PYXL_CLASS_INIT_CALL =
+            new PyElementType("PYXL CLASS INIT CALL", PyxlClassInitCallExpression.class);
+
+    public static IElementType PYXL_INSTANCE_CALL =
+            new PyElementType("PYXL INSTANCE CALL", PyxlInstanceCallExpression.class);
 
     public static IElementType COND_TAG =
             new PyElementType("COND_TAG", PyxlConditionalTag.class);

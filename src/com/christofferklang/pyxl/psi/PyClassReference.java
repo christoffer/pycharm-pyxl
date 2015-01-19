@@ -5,8 +5,11 @@ import com.jetbrains.python.psi.*;
 import com.jetbrains.python.psi.impl.PyReferenceExpressionImpl;
 import org.jetbrains.annotations.Nullable;
 
-public class PythonClassReference extends PyReferenceExpressionImpl {
-    public PythonClassReference(ASTNode astNode) {
+/**
+ * A simple reference to a PyClass object
+ */
+public class PyClassReference extends PyReferenceExpressionImpl {
+    public PyClassReference(ASTNode astNode) {
         super(astNode);
     }
 
