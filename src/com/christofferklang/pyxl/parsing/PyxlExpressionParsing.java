@@ -52,7 +52,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
             qualifiedName = parseQualifiedPyxlTagName();
         } catch(PyxlParsingException e) {
             myBuilder.error(e.getMessage());
-            pyxlClassInitCall.drop();
+            pyxlClassInitCall.error("Pyxl: Invalid tag name");
             pyxlInstanceCall.drop();
             return false;
         }
@@ -78,7 +78,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
 
             final PsiBuilder.Marker instanceArgList = myBuilder.mark();
             if(!parseTagBody()) {
-                // Something went wrong when parsing the body, bail
+                // Something went wrong when parsing the body, bail (errors set in parseTagBody)
                 instanceArgList.done(PyxlElementTypes.ARGUMENT_LIST);
                 pyxlInstanceCall.done(PyxlElementTypes.PYXL_INSTANCE_CALL);
                 return false;
@@ -89,7 +89,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
             try {
                 parseQualifiedPyxlTagName(qualifiedName, null);
             } catch(PyxlParsingException e) {
-                myBuilder.error(String.format("Pyxl expected closing tag: </%s>", qualifiedName));
+                myBuilder.error(String.format("Pyxl: expected closing tag: </%s>", qualifiedName));
                 instanceArgList.done(PyxlElementTypes.ARGUMENT_LIST);
                 pyxlInstanceCall.done(PyxlElementTypes.PYXL_INSTANCE_CALL);
                 return false;
@@ -98,9 +98,13 @@ class PyxlExpressionParsing extends ExpressionParsing {
             if(myBuilder.getTokenType() == PyxlTokenTypes.TAGEND) {
                 myBuilder.advanceLexer();
             } else {
-                myBuilder.error("Pyxl expected >");
+                myBuilder.error("Pyxl: expected >");
             }
             instanceArgList.done(PyxlElementTypes.ARGUMENT_LIST);
+        } else {
+            pyxlClassInitCall.error("Pyxl: Expected end of tag");
+            pyxlInstanceCall.drop();
+            return false;
         }
 
         pyxlInstanceCall.done(PyxlElementTypes.PYXL_INSTANCE_CALL);
@@ -137,7 +141,7 @@ class PyxlExpressionParsing extends ExpressionParsing {
                 stringLiteral.done(PyElementTypes.STRING_LITERAL_EXPRESSION);
             } else {
                 // Anything else is an error
-                myBuilder.error(String.format("Pyxl encountered unexpected token: %s", token));
+                myBuilder.error(String.format("Pyxl: encountered unexpected token: %s", token));
                 return false;
             }
         }
