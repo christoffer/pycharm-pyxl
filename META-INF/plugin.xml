@@ -1,7 +1,7 @@
 <idea-plugin version="2">
     <id>com.christofferklang.pyxl</id>
     <name>Pyxl Support</name>
-    <version>1.1</version>
+    <version>1.2</version>
     <vendor email="christoffer.klang@gmail.com">Christoffer Klang</vendor>
 
     <description><![CDATA[
@@ -16,9 +16,7 @@
 
     <change-notes><![CDATA[
       <ul>
-        <li> Performance improvements </li>
-        <li> Add support for DOCTYPE, CDATA </li>
-        <li> Add proper Python syntax support for different language levels (with X as, etc) </li>
+        <li>IDEA 2016.1 support</li>
       </ul>
     ]]>
     </change-notes>

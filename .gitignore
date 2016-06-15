@@ -1,6 +1,9 @@
 out/
-.idea
-*.iml
+
+# This is recommended idea ignores (http://stackoverflow.com/questions/11968531)
+**/.idea/workspace.xml
+**/.idea/tasks.xml
+
 .DS_Store
 src/com/christofferklang/pyxl/parsing/_PyxlLexer.java
 *.java~
