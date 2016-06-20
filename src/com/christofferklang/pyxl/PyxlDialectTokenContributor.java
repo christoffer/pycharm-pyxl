@@ -19,12 +19,6 @@ public class PyxlDialectTokenContributor implements PythonDialectsTokenSetContri
 
     @NotNull
     @Override
-    public TokenSet getNameDefinerTokens() {
-        return TokenSet.EMPTY;
-    }
-
-    @NotNull
-    @Override
     public TokenSet getKeywordTokens() {
         return TokenSet.EMPTY;
     }

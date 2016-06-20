@@ -170,7 +170,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
         if (mCachedSpecialPyxlTagNames == null) {
             PyImportElement importPyxlHtmlElement = getImportedPyxlHtmlModuleElement();
             if (importPyxlHtmlElement != null) {
-                PyFile htmlModule = (PyFile) importPyxlHtmlElement.getElementNamed("html");
+                PyFile htmlModule = (PyFile) importPyxlHtmlElement.getElementNamed("html", true);
 
                 mCachedSpecialPyxlTagNames = new HashSet<String>();
                 //noinspection ConstantConditions
@@ -223,7 +223,7 @@ public class PythonClassReference extends PyReferenceExpressionImpl {
                 // check only for imports of the module "html"
                 PyImportElement[] importedElements = importStatement.getImportElements();
                 for (PyImportElement importedElement : importedElements) {
-                    PsiElement htmlElement = importedElement.getElementNamed("html");
+                    PsiElement htmlElement = importedElement.getElementNamed("html", true);
                     if (htmlElement instanceof PyFile) {
                         sHtmlImportCache.put(cacheKey, importedElement);
                         return importedElement;
