@@ -7,7 +7,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$" type="java-resource" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="IntelliJ IDEA Community Edition" jdkType="IDEA JDK" />
+    <orderEntry type="library" scope="PROVIDED" name="Python Plugin JAR" level="application" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
