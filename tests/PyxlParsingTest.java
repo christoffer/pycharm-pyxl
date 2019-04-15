@@ -60,7 +60,7 @@ public class PyxlParsingTest extends ParsingTestCase {
     }
     @Override
     protected String getTestDataPath() {
-        return "../pycharm-pyxl/testdata/";
+        return "./testdata/";
     }
 
     @Override
