@@ -16,7 +16,7 @@
 
     <change-notes><![CDATA[
       <ul>
-        <li>Added IDEA 2019.1 support. Should also be backwards compatible but who knows?</li>
+        <li>Added IDEA 2019.1 support. Should also be backwards compatible with 2018 IDEA</li>
       </ul>
     ]]>
     </change-notes>
